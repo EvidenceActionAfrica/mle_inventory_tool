@@ -6,7 +6,7 @@ class categories extends Controller
     
     public function getCategory()
     {
-        // getting all songs and amount of songs
+        // getting all categories
         $categories = $this->model->getCategories();
 
         require APP . 'view/_templates/header.php';

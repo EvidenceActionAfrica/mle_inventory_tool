@@ -131,4 +131,98 @@ class Model
         $parameters = array(':id' => $id);
         return $query->execute($parameters);
     }
+
+        // INVENTORY MODEL 
+    // Fetch all inventory items
+    public function getItems() {
+        $sql = "SELECT i.id, c.category AS category, i.description, i.serial_number, 
+                        i.tag_number, i.acquisition_date, i.acquisition_cost, i.warranty_date 
+                FROM inventory i
+                JOIN categories c ON i.category_id = c.id
+                ORDER BY i.created_at DESC";
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Add new inventory item
+    public function addItem($category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date) {
+        $sql = "INSERT INTO inventory (category_id, description, serial_number, tag_number, acquisition_date, acquisition_cost, warranty_date) 
+                VALUES (:category_id, :description, :serial_number, :tag_number, :acquisition_date, :acquisition_cost, :warranty_date)";
+        $query = $this->db->prepare($sql);
+        $parameters = array(
+            ':category_id' => $category_id,
+            ':description' => $description,
+            ':serial_number' => $serial_number,
+            ':tag_number' => $tag_number,
+            ':acquisition_date' => $acquisition_date,
+            ':acquisition_cost' => $acquisition_cost,
+            ':warranty_date' => $warranty_date
+        );
+        return $query->execute($parameters);
+    }
+
+    // Get a single inventory item by ID
+    public function getItemById($id) {
+        $sql = "SELECT * FROM inventory WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':id' => $id);
+        $query->execute($parameters);
+        return $query->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Update inventory item
+    public function updateItem($id, $category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date) {
+        $sql = "UPDATE inventory 
+                SET category_id = :category_id, description = :description, serial_number = :serial_number, 
+                    tag_number = :tag_number, acquisition_date = :acquisition_date, 
+                    acquisition_cost = :acquisition_cost, warranty_date = :warranty_date
+                WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(
+            ':id' => $id,
+            ':category_id' => $category_id,
+            ':description' => $description,
+            ':serial_number' => $serial_number,
+            ':tag_number' => $tag_number,
+            ':acquisition_date' => $acquisition_date,
+            ':acquisition_cost' => $acquisition_cost,
+            ':warranty_date' => $warranty_date
+        );
+        return $query->execute($parameters);
+    }
+
+    // Delete inventory item
+    public function deleteItem($id) {
+        $sql = "DELETE FROM inventory WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':id' => $id);
+        return $query->execute($parameters);
+    }
+
+    //search items
+    public function searchItems($search_query)
+    {
+        $sql = "SELECT inventory.*, categories.category AS category
+            FROM inventory
+            LEFT JOIN categories ON inventory.category_id = categories.id
+            WHERE inventory.description LIKE :search_query1
+            OR inventory.serial_number LIKE :search_query2
+            OR inventory.tag_number LIKE :search_query3";
+
+        $stmt = $this->db->prepare($sql);
+        $search_param = '%' . $search_query . '%';
+        
+        // Bind each placeholder separately
+        $stmt->bindParam(':search_query1', $search_param, PDO::PARAM_STR);
+        $stmt->bindParam(':search_query2', $search_param, PDO::PARAM_STR);
+        $stmt->bindParam(':search_query3', $search_param, PDO::PARAM_STR);
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    
 }
+
+

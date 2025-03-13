@@ -125,7 +125,7 @@
         <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $assets_pages) ? 'active' : ''; ?>">ASSETS</a>
         <div class="dropdown-menu">
             <a href="<?php echo URL; ?>assets/instock" class="dropdown-item <?php echo $current_page == 'instock' ? 'active' : ''; ?>">In-Stock</a>
-            <a href="<?php echo URL; ?>assets/inuse" class="dropdown-item <?php echo $current_page == 'inuse' ? 'active' : ''; ?>">In-Use</a>
+            <a href="<?php echo URL; ?>inventory/" class="dropdown-item <?php echo $current_page == 'inuse' ? 'active' : ''; ?>">In-Use</a>
         </div>
         </div>
 

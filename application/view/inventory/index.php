@@ -1,3 +1,4 @@
+<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
 <h2>Inventory List</h2>
 
     <!-- Flash Messages -->
@@ -10,13 +11,13 @@
     <!-- Top Bar -->
     <div class="top-bar">
         <form method="GET" action="<?= URL ?>inventory/search" class="search-form">
-        <input type="text" name="search" placeholder="Search by Tag, Serial Number, or Description" 
-            value="<?= htmlspecialchars($search_query); ?>" required>
-        <button type="submit" aria-label="Search for inventory items">Search</button>
-        <?php if (!empty($search_query)): ?>
-            <a href="<?= URL ?>inventory" class="reset-search">Reset</a>
-        <?php endif; ?>
-    </form>
+            <input type="text" name="search" placeholder="Search by Tag, Serial Number, or Description"
+                value="<?= htmlspecialchars($search_query ?? ''); ?>" required>
+            <button type="submit">Search</button>
+            <?php if (!empty($search_query)): ?>
+                <a href="<?= URL ?>inventory/index" class="reset-search">Reset</a>
+            <?php endif; ?>
+        </form>
 
         <form action="<?= URL ?>inventory/add" method="GET">
             <button type="submit" class="add-btn">Add New Item</button>
@@ -51,7 +52,7 @@
                         <td><?= htmlspecialchars($item['acquisition_cost']); ?></td>
                         <td><?= htmlspecialchars($item['warranty_date']); ?></td>
                         <td>
-                        <a href="<?= URL ?>inventory/edit?id=<?= htmlspecialchars($item['id']); ?>">Edit</a> |
+                        <a href="<?= URL ?>inventory/edit/<?= htmlspecialchars($item['id']); ?>">Edit</a>  |
                             <form action="<?= URL ?>inventory/delete" method="POST" 
                                 onsubmit="return confirm('Are you sure you want to delete this item?');" style="display:inline;">
                                 <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']); ?>">
