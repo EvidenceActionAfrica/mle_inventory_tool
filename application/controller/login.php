@@ -12,12 +12,17 @@ class Login extends Controller
    
 
     public function loginUser(){
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         echo "loginUser method reached!"; 
         session_start();
         $staff = $this->model->getStaff($_POST["inputEmailAddress"]);
         
         if ($staff != null) {
             $saved_password = $staff->password;
+            $_SESSION['user_email'] = $staff->email;
             $_SESSION['role'] = $staff->role;
             $_SESSION['department'] = json_decode($staff->department, true);
             $_SESSION['position'] = $staff->position;
@@ -87,6 +92,10 @@ class Login extends Controller
 
  
     public function submit_password_reset() {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $email = $_POST['inputEmailAddress'];

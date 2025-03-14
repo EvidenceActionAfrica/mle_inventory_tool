@@ -2,43 +2,53 @@
 
 class Controller
 {
+    /**
+     * @var null Database Connection
+     */
     public $db = null;
+
+    /**
+     * @var null Model
+     */
     public $model = null;
 
-    public function __construct()
+    /**
+     * Whenever controller is created, open a database connection too and load "the model".
+     */
+    function __construct()
     {
         $this->openDatabaseConnection();
         $this->loadModel();
     }
 
+    /**
+     * Open the database connection with the credentials from application/config/config.php
+     */
     private function openDatabaseConnection()
     {
-        $dsn = 'mysql:host=localhost;dbname=mle_inventory;charset=utf8';
-        $username = 'root';
-        $password = '';
+        // set the (optional) options of the PDO connection. in this case, we set the fetch mode to
+        // "objects", which means all results will be objects, like this: $result->user_name !
+        // For example, fetch mode FETCH_ASSOC would return results like this: $result["user_name] !
+        // @see http://www.php.net/manual/en/pdostatement.fetch.php
+        $options = array(PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ, PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING);
 
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Use EXCEPTION for better debugging
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ];
+        // generate a database connection, using the PDO connector
+        // @see http://net.tutsplus.com/tutorials/php/why-you-should-be-using-phps-pdo-for-database-access/
+        $this->db = new PDO('mysql:host=localhost;dbname=mle_inventory;charset=utf8', 'root', '');
 
-        try {
-            $this->db = new PDO($dsn, $username, $password, $options);
-            //echo "Database connected successfully!";
-        } catch (PDOException $e) {
-            die('Connection failed: ' . $e->getMessage());
-        }
     }
 
+    /**
+     * Loads the "model".
+     * @return object model
+     */
     public function loadModel()
     {
-        $modelPath = APP . 'model/model.php';
-        if (file_exists($modelPath)) {
-            require $modelPath;
-            $this->model = new Model($this->db);
-        } else {
-            die('Model file not found: ' . $modelPath);
-        }
+        require APP . 'model/model.php';
+        // create new "model" (and pass the database connection)
+        $this->model = new Model($this->db);
     }
 }
+
+
+

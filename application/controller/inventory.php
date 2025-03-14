@@ -5,6 +5,10 @@ class Inventory extends Controller
     // Fetch all inventory items
     public function index()
     {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = !empty($search_query) ? $this->model->searchItems($search_query) : $this->model->getItems();
 
@@ -15,8 +19,11 @@ class Inventory extends Controller
     // Add a new item
     public function add()
     {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Process form submission
             $category_id = intval($_POST['category_id']);
             $description = trim($_POST['description']);
             $serial_number = trim($_POST['serial_number']);
@@ -29,7 +36,6 @@ class Inventory extends Controller
             header("Location: " . URL . "inventory/index?success=Item added successfully!");
             exit();
         } else {
-            // Display the add item form
             $categories = $this->model->getCategories() ?? [];
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory/add_inventory_item.php';
@@ -40,8 +46,11 @@ class Inventory extends Controller
     // Edit an existing item
     public function edit($id)
     {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Handle form submission
             $id = intval($_POST['id']);
             $category_id = intval($_POST['category_id']);
             $description = trim($_POST['description']);
@@ -51,12 +60,11 @@ class Inventory extends Controller
             $acquisition_cost = trim($_POST['acquisition_cost']);
             $warranty_date = trim($_POST['warranty_date']);
     
-            // Update item in the database
             $this->model->updateItem($id, $category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date);
             header("Location: " . URL . "inventory/index?success=Item updated successfully!");
             exit();
         } else {
-            // Fetch item data by ID for pre-filling the form
+
             $item = $this->model->getItemById($id);
             $categories = $this->model->getCategories() ?? [];
     
@@ -69,6 +77,10 @@ class Inventory extends Controller
     // Delete an item
     public function delete()
     {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
             $id = intval($_POST['id']);
             $this->model->deleteItem($id);
@@ -84,6 +96,10 @@ class Inventory extends Controller
     // Search inventory items
     public function search()
     {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = $this->model->searchItems($search_query);
 

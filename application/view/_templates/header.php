@@ -101,7 +101,7 @@
     <?php
     $current_page = basename($_SERVER['REQUEST_URI']);
     $assets_pages = ['instock', 'inuse'];
-    $collections_pages = ['pending', 'lost', 'repairs', 'disposed'];
+    $collections_pages = ['pendin', 'lost', 'repairs', 'disposed'];
     $config_pages = ['inventory', 'categories'];
     $admin_pages = ['auth_users', 'offices', 'locations', 'positions', 'departments'];
     ?>
@@ -114,11 +114,11 @@
 
     <div>
         <!-- Main links -->
-        <a href="<?php echo URL; ?>pending-assignments" class="nav-option <?php echo $current_page == 'pending-assignments' ? 'active' : ''; ?>">PENDING ASSIGNMENTS</a>
+        <a href="<?php echo URL; ?>InventoryAssignment/pending" class="nav-option <?php echo $current_page == 'InventoryAssignment/pending' ? 'active' : ''; ?>">PENDING ASSIGNMENTS</a>
 
-        <a href="<?php echo URL; ?>item-assignments" class="nav-option <?php echo $current_page == 'item-assignments' ? 'active' : ''; ?>">ASSIGNMENTS</a>
+        <a href="<?php echo URL; ?>InventoryAssignment" class="nav-option <?php echo $current_page == 'InventoryAssignment' ? 'active' : ''; ?>">ASSIGNMENTS</a>
 
-        <a href="<?php echo URL; ?>item-returns" class="nav-option <?php echo $current_page == 'item-returns' ? 'active' : ''; ?>">RETURN ITEM</a>
+        <a href="<?php echo URL; ?>inventoryreturn" class="nav-option <?php echo $current_page == 'inventoryreturn' ? 'active' : ''; ?>">RETURN ITEM</a>
 
         <!-- Dropdown menus -->
         <div class="dropdown">
@@ -132,7 +132,7 @@
         <div class="dropdown">
         <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $collections_pages) ? 'active' : ''; ?>">COLLECTIONS</a>
         <div class="dropdown-menu">
-        <a href="<?php echo URL; ?>item-returns/pending" class="dropdown-item <?php echo $current_page == 'pending' ? 'active' : ''; ?>">Pending Approvals</a>
+        <a href="<?php echo URL; ?>item-returns/pendin" class="dropdown-item <?php echo $current_page == 'pendin' ? 'active' : ''; ?>">Pending Approvals</a>
             <a href="<?php echo URL; ?>collections/lost" class="dropdown-item <?php echo $current_page == 'lost' ? 'active' : ''; ?>">Lost Inventory</a>
             <a href="<?php echo URL; ?>collections/repairs" class="dropdown-item <?php echo $current_page == 'repairs' ? 'active' : ''; ?>">Repairs</a>
             <a href="<?php echo URL; ?>collections/disposed" class="dropdown-item <?php echo $current_page == 'disposed' ? 'active' : ''; ?>">Disposed</a>
@@ -150,9 +150,9 @@
         <div class="dropdown">
         <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $admin_pages) ? 'active' : ''; ?>">ADMIN</a>
         <div class="dropdown-menu">
-            <a href="<?php echo URL; ?>auth_users" class="dropdown-item <?php echo $current_page == 'auth_users' ? 'active' : ''; ?>">User Profiles</a>
-            <a href="<?php echo URL; ?>offices" class="dropdown-item <?php echo $current_page == 'offices' ? 'active' : ''; ?>">Office</a>
-            <a href="<?php echo URL; ?>locations" class="dropdown-item <?php echo $current_page == 'locations' ? 'active' : ''; ?>">Location</a>
+            <a href="<?php echo URL; ?>users/getUsers" class="dropdown-item <?php echo $current_page == 'users/getUsers' ? 'active' : ''; ?>">Users</a>
+            <a href="<?php echo URL; ?>office/getOffices" class="dropdown-item <?php echo $current_page == 'office/getOffices' ? 'active' : ''; ?>">Office</a>
+            <a href="<?php echo URL; ?>location/getLocations" class="dropdown-item <?php echo $current_page == 'locations/getLocations' ? 'active' : ''; ?>">Location</a>
         </div>
         </div>
     </div>
