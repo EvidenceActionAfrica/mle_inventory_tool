@@ -22,33 +22,23 @@ class Model
 
     // login function
     
-    public function getStaff($email){
-        $sql = "SELECT * FROM staff_login WHERE email = :email";
+    public function getStaff($email) {
+        $sql = "SELECT email, password FROM staff_login WHERE email = :email LIMIT 1";
         $query = $this->db->prepare($sql);
-        $parameters = array(':email' => $email); 
-        
-        $query->execute($parameters);
-        return $query->fetch();
+        $query->bindParam(':email', $email, PDO::PARAM_STR);
+        $query->execute();
+    
+        $staff = $query->fetch(PDO::FETCH_OBJ);     
+        return $staff;
     }
+    
 
-    public function reset_password($email, $password){
+    public function reset_password($email, $hashed_password,){
         $sql = "UPDATE staff_login SET password = :password WHERE email = :email";
         $query = $this->db->prepare($sql);
-        $parameters = array(':email' => $email,':password' => $password); 
-        
-        if ($query->execute($parameters)) {
-            // Check if any rows were affected
-            if ($query->rowCount() > 0) {
-            // Password reset successful
-            return true;
-            } else {
-            // No rows were affected (email not found)
-            return false;
-            }
-        } else {
-            // Error executing the query
-            return false;
-        }
+    $query->bindValue(':password', $hashed_password, PDO::PARAM_STR);
+    $query->bindValue(':email', $email, PDO::PARAM_STR);
+    return $query->execute();
     }
     // user management function
     public function get_users()
@@ -674,20 +664,24 @@ class Model
         }
             //item returning process...
         //model to show returned item
-        public function getReturnedItems()
+        public function getReturnedItemsByUser($returned_by)
         {
-            $sql = "SELECT ir.id, i.description, i.serial_number, 
-                        SUBSTRING_INDEX(sl.email, '@', 1) AS name, 
-                        ir.return_date, ir.status
+            $sql = "SELECT ir.*, inv.description, inv.serial_number, 
+                           sl.email AS receiver_email,
+                           SUBSTRING_INDEX(sl.email, '@', 1) AS name
                     FROM inventory_returned ir
-                    JOIN inventory i ON ir.item_id = i.id
+                    JOIN inventory inv ON ir.item_id = inv.id
                     JOIN staff_login sl ON ir.receiver_id = sl.id
+                    WHERE ir.returned_by = :returned_by
                     ORDER BY ir.return_date DESC";
-
+        
             $query = $this->db->prepare($sql);
-            $query->execute();
+            $query->execute([':returned_by' => $returned_by]);
+        
             return $query->fetchAll(PDO::FETCH_ASSOC);
         }
+        
+
 
 
     // Get a single returned item by ID
@@ -708,11 +702,23 @@ class Model
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
 
-
-    public function addItemReturn($assignment_id, $item_id, $return_date, $receiver_id, $status)
+    public function getItemReturnStatus($assignment_id, $item_id)
     {
-        $sql = "INSERT INTO inventory_returned (assignment_id, item_id, return_date, receiver_id, status, created_at) 
-                VALUES (:assignment_id, :item_id, :return_date, :receiver_id, :status, NOW())";
+        $sql = "SELECT status FROM inventory_returned WHERE assignment_id = :assignment_id AND item_id = :item_id LIMIT 1";
+        $query = $this->db->prepare($sql);
+
+        $query->execute([
+            ':assignment_id' => $assignment_id,
+            ':item_id' => $item_id
+        ]);
+
+        return $query->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function addItemReturn($assignment_id, $item_id, $return_date, $receiver_id, $status, $returned_by)
+    {
+        $sql = "INSERT INTO inventory_returned (assignment_id, item_id, return_date, receiver_id, status, returned_by, created_at) 
+                VALUES (:assignment_id, :item_id, :return_date, :receiver_id, :status, :returned_by, NOW())";
         $query = $this->db->prepare($sql);
 
         $parameters = array(
@@ -720,10 +726,30 @@ class Model
             ':item_id' => $item_id,
             ':return_date' => $return_date,
             ':receiver_id' => $receiver_id,
-            ':status' => $status
+            ':status' => $status,
+            ':returned_by' => $returned_by
         );
 
         return $query->execute($parameters);
+    }
+
+    // Get pending items for approval by the logged-in user
+    public function getPendingApprovalsByUser($receiver_id)
+    {
+        $sql = "SELECT ir.id, i.description, i.serial_number, 
+                SUBSTRING_INDEX(sl.email, '@', 1) AS name, 
+                ir.return_date, ir.status
+            FROM inventory_returned ir
+            JOIN inventory i ON ir.item_id = i.id
+            JOIN staff_login sl ON ir.receiver_id = sl.id
+            WHERE ir.receiver_id = :receiver_id
+            ORDER BY ir.return_date DESC";
+
+    $query = $this->db->prepare($sql);
+    $query->bindParam(':receiver_id', $receiver_id);
+    $query->execute();
+
+    return $query->fetchAll(PDO::FETCH_ASSOC);
     }
     
 }

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2025 at 11:35 AM
+-- Generation Time: Mar 14, 2025 at 02:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -121,6 +121,7 @@ CREATE TABLE `inventory_returned` (
   `item_id` int(11) NOT NULL,
   `return_date` date NOT NULL,
   `receiver_id` int(11) NOT NULL,
+  `returned_by` varchar(255) NOT NULL,
   `status` enum('pending','approved') DEFAULT 'pending',
   `item_state` enum('functional','damaged','lost') DEFAULT 'functional',
   `approved_by` int(11) DEFAULT NULL,
@@ -134,8 +135,8 @@ CREATE TABLE `inventory_returned` (
 -- Dumping data for table `inventory_returned`
 --
 
-INSERT INTO `inventory_returned` (`id`, `assignment_id`, `item_id`, `return_date`, `receiver_id`, `status`, `item_state`, `approved_by`, `approved_date`, `repair_status`, `created_at`, `updated_at`) VALUES
-(4, 2, 2, '2025-02-28', 2, 'pending', 'functional', NULL, NULL, NULL, '2025-03-14 10:09:20', '2025-03-14 10:09:20');
+INSERT INTO `inventory_returned` (`id`, `assignment_id`, `item_id`, `return_date`, `receiver_id`, `returned_by`, `status`, `item_state`, `approved_by`, `approved_date`, `repair_status`, `created_at`, `updated_at`) VALUES
+(7, 2, 2, '2025-02-25', 2, 'Admin', 'pending', 'functional', NULL, NULL, NULL, '2025-03-14 12:49:22', '2025-03-14 12:49:22');
 
 -- --------------------------------------------------------
 
@@ -207,7 +208,7 @@ CREATE TABLE `staff_login` (
 
 INSERT INTO `staff_login` (`id`, `email`, `password`, `role`, `department`, `position`, `created_at`, `updated_at`) VALUES
 (1, 'admin@test.com', '$2y$10$A/rGSd51afa7/5.lakeWP.AIH0noBnLfryKuaUtIZdLYkA0uKw2AS', 'super_admin', 'IS', 'Manager', '2025-03-12 13:13:02', '2025-03-14 09:52:04'),
-(2, 'tech@test.com', 'mle2025', 'admin', 'IT', 'Senior Manager', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
+(2, 'tech@test.com', '$2y$10$fMqQh24UHICP3P2Hml2lYefr0S/zjhBASBsyMDNDe8H8epVnNAxEW', 'admin', 'IT', 'Senior Manager', '2025-03-12 13:13:02', '2025-03-14 11:40:37'),
 (3, 'quality@test.com', 'mle2025', 'admin', 'QA/QC', 'Associate Manager', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
 (4, 'monitor@test.com', 'mle2025', 'admin', 'MLE', 'Director', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
 (5, 'staff@test.com', 'mle2025', 'staff', 'MLE', 'Associate IS', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
@@ -295,7 +296,7 @@ ALTER TABLE `inventory_assignment`
 -- AUTO_INCREMENT for table `inventory_returned`
 --
 ALTER TABLE `inventory_returned`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `locations`

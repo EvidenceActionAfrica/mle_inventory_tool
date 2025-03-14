@@ -14,7 +14,7 @@
     <p class="error-message"><?= htmlspecialchars($_GET['error']); ?></p>
 <?php endif; ?>
 <div class="container mt-5">
-    <h2 style="text-decoration: underline;">Your Approved Assigned Items</h2>
+    <h2 style="text-decoration: underline;">Your Assigned Items</h2>
 
     <table class="styled-table">
         <thead>

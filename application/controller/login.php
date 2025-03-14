@@ -9,66 +9,54 @@ class Login extends Controller
         }
         require APP . 'view/login/index.php';
     }
-   
 
-    public function loginUser(){
+    public function loginUser() {
+        session_start();
+        echo "loginUser method reached!<br>";
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
-        echo "loginUser method reached!"; 
-        session_start();
+        
         $staff = $this->model->getStaff($_POST["inputEmailAddress"]);
+        if (!$staff) {
+            die("No user found or query failed for email: " . htmlspecialchars($_POST["inputEmailAddress"]));
+        }
+        
+        if (empty($staff->password)) {
+            die("Password is empty or not set in the database for email: " . htmlspecialchars($staff->email));
+        }
         
         if ($staff != null) {
             $saved_password = $staff->password;
-            $_SESSION['user_email'] = $staff->email;
-            $_SESSION['role'] = $staff->role;
-            $_SESSION['department'] = json_decode($staff->department, true);
-            $_SESSION['position'] = $staff->position;
-
             $is_correct_user = password_verify($_POST["inputPassword"], $saved_password);
+  
+            var_dump($is_correct_user); // true or false
     
             if ($is_correct_user) {
+                $_SESSION['user_email'] = $staff->email;
+                $_SESSION['role'] = $staff->role;
+                $_SESSION['department'] = json_decode($staff->department, true);
+                $_SESSION['position'] = $staff->position;
+    
                 $user_email = $_POST["inputEmailAddress"];
-
-                if ($user_email) {
-                    $parts = explode('@', $user_email); // Split email at '@'
-                    $user_name = $parts[0]; // Get the first part of the email that contains the user's name
-        
-                    if (strpos($user_name, '.') !== false) {
-                        $nameParts = explode('.', $user_name);
-                        $user_name = $nameParts[0]; // Get the first name
-                    }
-        
-                    $_SESSION['user'] = ucfirst($user_name); // Captalize first letter and set user in session variable
-                }
-
-                //TODO: Add role definitions so that you are directed to different places based on role
-                // if($_SESSION['role'] == "DE"){
-                //     //Proceed to DE interface
-                //     header('Location:' . URL . 'submissions_DE/index/');
-                //     exit();
-                // } else {
-                //     // Proceed to index page
-                //     //$this->model->update_login($_POST["inputEmailAddress"]);
-                //     header('Location:' . URL . 'login/index/');
-                //     exit();
-                // } 
+                $user_name = explode('@', $user_email)[0];
+                $_SESSION['user'] = ucfirst($user_name);
+    
                 header('Location:' . URL . 'home/index/');
                 exit();
             } else {
-                // Password verification failed
+                echo "Password verification failed!";
                 header('Location:' . URL . 'login/index?error=invalid_credentials');
                 exit();
             }
         } else {
-            // Staff not found
+            echo "No user found with that email!";
             header('Location:' . URL . 'login/index?error=invalid_credentials');
             exit(); 
         }
-        
     }
+    
     
     public function password_reset() {
         session_start();
@@ -96,7 +84,6 @@ class Login extends Controller
             echo "Model not loaded properly!";
             exit();
         }
-        
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $email = $_POST['inputEmailAddress'];
             $newPassword1 = $_POST['newPassword1'];
@@ -125,3 +112,8 @@ class Login extends Controller
         header('Location:' . URL . 'login/index/');
     }
 }
+
+
+
+
+

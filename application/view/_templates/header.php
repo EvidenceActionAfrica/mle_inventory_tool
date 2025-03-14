@@ -132,7 +132,7 @@
         <div class="dropdown">
         <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $collections_pages) ? 'active' : ''; ?>">COLLECTIONS</a>
         <div class="dropdown-menu">
-        <a href="<?php echo URL; ?>item-returns/pendin" class="dropdown-item <?php echo $current_page == 'pendin' ? 'active' : ''; ?>">Pending Approvals</a>
+        <a href="<?php echo URL; ?>inventoryreturn/pendingapprovals" class="dropdown-item <?php echo $current_page == 'inventoryreturn/pendingapprovals' ? 'active' : ''; ?>">Pending Approvals</a>
             <a href="<?php echo URL; ?>collections/lost" class="dropdown-item <?php echo $current_page == 'lost' ? 'active' : ''; ?>">Lost Inventory</a>
             <a href="<?php echo URL; ?>collections/repairs" class="dropdown-item <?php echo $current_page == 'repairs' ? 'active' : ''; ?>">Repairs</a>
             <a href="<?php echo URL; ?>collections/disposed" class="dropdown-item <?php echo $current_page == 'disposed' ? 'active' : ''; ?>">Disposed</a>
