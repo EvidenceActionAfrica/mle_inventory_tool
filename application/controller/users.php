@@ -4,23 +4,34 @@ class Users extends Controller
 {
     // Get all users
     public function getUsers()
-{
-    if ($this->model === null) {
-        echo "Model not loaded properly!";
-        exit();
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+        
+            if (!isset($_SESSION['user_email'])) {
+                header("Location: " . URL . "login");
+                exit();
+            }
+        $users = $this->model->get_users();
+
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/configurations/staff_view.php';
     }
-    $users = $this->model->get_users();
-
-    require APP . 'view/_templates/header.php';
-    require APP . 'view/configurations/staff_view.php';
-}
-
 
     // Add new user
     public function add()
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -43,6 +54,12 @@ class Users extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = intval($_POST['id']);
             $email = trim($_POST['email']);
@@ -62,6 +79,12 @@ class Users extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if (isset($_GET['delete'])) {

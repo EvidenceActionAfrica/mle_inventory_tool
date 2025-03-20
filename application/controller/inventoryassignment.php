@@ -5,6 +5,12 @@ class InventoryAssignment extends Controller
     // Display all assignments
     public function index()
     {
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -46,81 +52,99 @@ class InventoryAssignment extends Controller
             require APP . 'view/inventory_assignments/add_assignment.php';
         }
     }
-
-    // Edit assignment 
-    public function edit()
-{
-    if ($this->model === null) {
-        echo "Model not loaded properly!";
-        exit();
-    }
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $assignment_id = intval($_POST['assignment_id']);
-        $item_ids = $_POST['item_ids'];
-        $date_assigned = $_POST['date_assigned'];
-        $manager_email = $_POST['managed_by'];
-        $location = $_POST['location'];
-
-        $assignment = $this->model->getAssignmentById($assignment_id);
-
-        if (!$assignment) {
-            header("Location: " . URL . "inventoryassignment?error=Assignment not found.");
-            exit();
-        }
-
-        if ($assignment['acknowledgment_status'] !== 'pending') {
-            header("Location: " . URL . "inventoryassignment?error=Cannot edit acknowledged items.");
-            exit();
-        }
-
-        $result = $this->model->updateAssignment($assignment_id, $item_ids, $date_assigned, $manager_email, $location);
-
-        if (strpos($result, 'successfully') !== false) {
-            header("Location: " . URL . "inventoryassignment?success=" . urlencode($result));
-        } else {
-            header("Location: " . URL . "inventoryassignment?error=" . urlencode($result));
-        }
-        exit();
-    } else {
-        $assignment_id = $_GET['assignment_id'] ?? null;
-
-        if (!$assignment_id) {
-            header("Location: " . URL . "inventoryassignment?error=No assignment selected.");
-            exit();
-        }
-
-        $assignment = $this->model->getAssignmentById($assignment_id);
-        $unassignedItems = $this->model->getUnassignedItems();
-        $users = $this->model->getAllUsers();
-        $offices = $this->model->getOffices();
-        
-        require APP . 'view/_templates/header.php';
-        require APP . 'view/inventory_assignments/edit_assignment.php';
-    }
-}
-
-
-
-    // Delete assignment
-    public function delete()
-    {
+    //edit assignment
+    public function edit($id) {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
-        if (isset($_GET['delete'])) {
-            $assignment_id = intval($_GET['delete']);
-            $result = $this->model->deleteAssignment($assignment_id);
-
-            if (strpos($result, 'successfully') !== false) {
-                header("Location: " . URL . "InventoryAssignment?success=" . urlencode($result));
+    
+        $assignment = $this->model->getAssignmentById($id);
+        
+        if (!$assignment) {
+            echo "Assignment not found.";
+            return;
+        }
+    
+        // Prevent editing if already acknowledged
+        if ($assignment['acknowledgment_status'] !== 'pending') {
+            echo "Editing not allowed. The assignment has been acknowledged.";
+            return;
+        }
+    
+        // Fetch necessary data
+        $unassignedItems = $this->model->getUnassignedItems();
+        $users = $this->model->getAllUsers();
+        $offices = $this->model->getOffices(); 
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Validate input data
+            $updatedData = [
+                'user_id' => $_POST['user_id'], 
+                'location' => $_POST['location'], 
+                'date_assigned' => $_POST['date_assigned'], 
+                'managed_by' => $_POST['managed_by']
+            ];
+    
+            // Ensure inventory_id is an array
+            if (!empty($_POST['inventory_id']) && is_array($_POST['inventory_id'])) {
+                $inventory_ids = $_POST['inventory_id'];
             } else {
-                header("Location: " . URL . "InventoryAssignment?error=" . urlencode($result));
+                header("Location: " . URL . "inventoryassignment/edit/$id?error=Invalid+inventory+selection");
+                exit();
             }
-            exit();
+    
+            // Call update method with all required parameters
+            $result = $this->model->updateAssignment($id, $updatedData, $inventory_ids);
+    
+            if ($result) {
+                header("Location: " . URL . "inventoryassignment?success=" . urlencode("Assignment Updated Successfully"));
+                exit();
+            } else {
+                header("Location: " . URL . "inventoryassignment/edit/$id?error=Update+Failed");
+                exit();
+            }
+        } else {
+            // Load edit view with necessary data
+            require APP . 'view/_templates/header.php';
+            require APP . 'view/inventory_assignments/edit_assignment.php';
         }
     }
-
+    
+    //delete assignment
+    public function delete() {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
+            $id = $_POST['assignment_id'];
+            $success = $this->model->deleteAssignment($id);
+            if ($success) {
+                header("Location: " . URL . "inventoryassignment/index?success=deleted");
+                exit();
+            } else {
+                echo "Deletion failed. The assignment may not be pending.";
+            }
+        }
+    }
+    //search button
+    public function search() {
+        if (!isset($_GET['search']) || empty(trim($_GET['search']))) {
+            header("Location: " . URL . "inventoryassignment");
+            exit();
+        }
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        $search_query = trim($_GET['search']);
+        $assignments = $this->model->searchAssignments($search_query);
+    
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory_assignments/index.php'; 
+    }
+    
     // Show pending assignments for the logged-in user
     public function pending()
     {
@@ -130,18 +154,18 @@ class InventoryAssignment extends Controller
         }
         session_start();
 
-        if (!isset($_SESSION['user'])) {
+        if (!isset($_SESSION['user_email'])) { 
             header("Location: " . URL . "login");
             exit();
         }
 
-        $user_name = $_SESSION['user']; 
-
-        $pendingAssignments = $this->model->getPendingAssignmentsByLoggedInUser($user_name);
+        $user_email = $_SESSION['user_email']; 
+        $pendingAssignments = $this->model->getPendingAssignmentsByLoggedInUser($user_email);
 
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory_assignments/pending_assignments.php';
     }
+
     // Acknowledge selected assignments
         public function acknowledge()
         {
@@ -151,16 +175,16 @@ class InventoryAssignment extends Controller
             }
             session_start();
 
-            if (!isset($_SESSION['user'])) {
+            if (!isset($_SESSION['user_email'])) { // Ensure email exists in session
                 header("Location: " . URL . "login");
                 exit();
             }
 
-            $user_name = $_SESSION['user'];
+            $user_email = $_SESSION['user_email'];
             $assignment_id = $_POST['assignment_id'] ?? null;
 
             if ($assignment_id) {
-                $updated_rows = $this->model->acknowledgeAssignment($assignment_id, $user_name);
+                $updated_rows = $this->model->acknowledgeAssignment($assignment_id, $user_email);
 
                 if ($updated_rows > 0) {
                     $_SESSION['success_message'] = "Item acknowledged successfully!";

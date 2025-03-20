@@ -1,18 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Returned Items</title>
-    <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-</head>
-<body>
-
-<?php if (isset($_GET['success'])): ?>
-    <p class="success-message"><?= htmlspecialchars($_GET['success']); ?></p>
-<?php elseif (isset($_GET['error'])): ?>
-    <p class="error-message"><?= htmlspecialchars($_GET['error']); ?></p>
-<?php endif; ?>
+<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
 <div class="container mt-5">
     <h2 style="text-decoration: underline;">Your Assigned Items</h2>
 
@@ -50,26 +36,19 @@
     </table>
 </div>
 
-
-
-<div class="row">
-    <div class="col-md-10">
-        <!-- Search Bar -->
-    </div>
-    <div class="col-md-2">
-    <!-- Record Return Button -->
-    <form action="<?= URL; ?>inventoryreturn/add" method="GET">
-    <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id'] ?? 0); ?>">
-    <button type="submit" class="add-btn">Record Return</button>
-</form>
-
-</div>
-
-</div>
-</div>
 <div class="container mt-5">
     <!-- Returned Items Table -->
     <h2 style="text-decoration: underline;">Returned Items</h2>
+    
+    <div style="margin-top: 2px; text-align: right;">
+        <!-- Record Return Button -->
+        <form action="<?= URL; ?>inventoryreturn/add" method="GET" style="display: inline;">
+            <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id'] ?? 0); ?>">
+            <button type="submit" class="add-btn">
+                Record Return
+            </button>
+        </form>
+    </div>
     <table class="styled-table">
         <thead>
             <tr>
@@ -83,33 +62,43 @@
         </thead>
         <tbody>
         <?php if (!empty($returnedItems)): ?>
-            <?php foreach ($returnedItems as $return): ?>
-                <tr>
-                    <td><?= htmlspecialchars($return['description']); ?></td>
-                    <td><?= htmlspecialchars($return['serial_number']); ?></td>
-                    <td><?= htmlspecialchars($return['name']); ?></td>
-                    <td><?= htmlspecialchars($return['return_date']); ?></td>
-                    <td><?= htmlspecialchars($return['status']); ?></td>
-                    <td>
-                        <?php if ($return['status'] === 'pending'): ?>
-                            <a href="<?= URL; ?>item-returns/delete?id=<?= $return['id']; ?>" 
-                            onclick="return confirm('Are you sure you want to delete this pending return?');">
-                            Delete
-                            </a>
-                        <?php else: ?>
-                            N/A
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-        <?php else: ?>
+        <?php foreach ($returnedItems as $return): ?>
             <tr>
-                <td colspan="6">No returned items found.</td>
+                <td><?= htmlspecialchars($return['description']); ?></td>
+                <td><?= htmlspecialchars($return['serial_number']); ?></td>
+                <td><?= htmlspecialchars($return['receiver_name']); ?></td>
+                <td><?= htmlspecialchars($return['return_date']); ?></td>
+                <td><?= htmlspecialchars($return['status']); ?></td>
+                <td>
+                    <?php if ($return['status'] === 'pending'): ?>
+                        <a href="<?= URL; ?>inventoryreturn/delete?id=<?= $return['id']; ?>" 
+                        onclick="return confirm('Are you sure you want to delete this pending return?');">
+                        Delete
+                        </a>
+                    <?php else: ?>
+                        N/A
+                    <?php endif; ?>
+                </td>
             </tr>
-        <?php endif; ?>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr>
+            <td colspan="6">No returned items found.</td>
+        </tr>
+    <?php endif; ?>
+
         </tbody>
     </table>
 </div>
 
-</body>
-</html>
+<?php if (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success"><?= $_SESSION['success']; ?></div>
+    <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['error'])): ?>
+    <div class="alert alert-danger"><?= $_SESSION['error']; ?></div>
+    <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+

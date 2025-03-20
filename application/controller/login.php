@@ -39,7 +39,7 @@ class Login extends Controller
                 $_SESSION['department'] = json_decode($staff->department, true);
                 $_SESSION['position'] = $staff->position;
     
-                $user_email = $_POST["inputEmailAddress"];
+                $user_email = $staff->email;  // Use the email from DB, not user input
                 $user_name = explode('@', $user_email)[0];
                 $_SESSION['user'] = ucfirst($user_name);
     

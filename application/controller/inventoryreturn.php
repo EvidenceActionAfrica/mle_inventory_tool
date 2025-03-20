@@ -5,120 +5,424 @@ class inventoryreturn extends Controller
 
     public function index()
     {
-        if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
-        }
-        
         session_start();
-        if (!isset($_SESSION['user'])) {
+    
+        if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
     
-        $user_name = $_SESSION['user']; 
-        $returned_by = $_SESSION['user'];
-        $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_name);
-        $returnedItems = $this->model->getReturnedItemsByUser($returned_by);
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        $user_email = $_SESSION['user_email']; 
+        $returned_by = $_SESSION['user_email']; // Adjust to match your session variable for the logged-in user's email
+        $returnedItems = $this->model->getReturnedItems($returned_by);
+        $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
         
-        // Load the view and pass both data sets
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/index.php';
     }
     
-
-// Add a new returned item
-public function add()
-{
-    session_start(); 
-
-    // Check if user is logged in
-    if (!isset($_SESSION['user'])) {
-        header("Location: " . URL . "login");
+    public function add()
+    {
+        session_start();
+    
+        if ($this->model === null) {
+            die("Model not loaded properly!");
+        }
+    
+        if (!isset($_SESSION['user_email'])) {
+            die("User not logged in!");
+        }
+    
+        $user_email = $_SESSION['user_email'];
+        $returned_by = strstr($user_email, '@', true);
+    
+        $items = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
+        $receivers = $this->model->getReceivers();
+    
+        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+            require APP . 'view/_templates/header.php';
+            require APP . 'view/inventoryreturns/return_item_form.php';
+            exit();
+        }
+    
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            echo "POST request received! Processing form submission...<br>";
+        
+            // Ensure `assignment_ids[]` is passed correctly
+            $assignment_ids = $_POST['assignment_ids'] ?? [];
+            $return_date = $_POST['return_date'] ?? date('Y-m-d H:i:s');  // Fallback to current date if not provided
+            $receiver_id = $_POST['receiver_id'] ?? null;
+            $returned_by = $_SESSION['user_email']; // or another logic to set who is returning the item
+        
+            if (empty($assignment_ids)) {
+                die("No Assignment IDs selected!");
+            }
+        
+            echo "Processing " . count($assignment_ids) . " item(s)...<br>";
+        
+            // Loop through each selected assignment_id
+            foreach ($assignment_ids as $assignment_id) {
+                echo "Processing Assignment ID: $assignment_id<br>"; // Debugging to ensure assignment_id is passed
+        
+                // Call the model method to record the return for each assignment
+                $result = $this->model->recordReturn($assignment_id, $returned_by, $receiver_id, $return_date);
+        
+                if (!$result) {
+                    echo "Failed to return Assignment ID: $assignment_id <br>";
+                } else {
+                    echo "Successfully returned Assignment ID: $assignment_id<br>";
+                }
+            }
+        
+            // Redirect after processing
+            header("Location: " . URL . "inventoryReturn?success=Items returned successfully!");
+            exit();
+        }
+    }        
+    public function delete()
+    {
+        session_start();
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    
+        if (!isset($_GET['id']) || empty($_GET['id'])) {
+            header("Location: " . URL . "inventoryReturn?error=Invalid request!");
+            exit();
+        }
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        $id = $_GET['id'];
+        $deleted = $this->model->deleteReturn($id);
+    
+        if ($deleted) {
+            header("Location: " . URL . "inventoryReturn?success=Item deleted successfully!");
+        } else {
+            header("Location: " . URL . "inventoryReturn?error=Cannot delete approved returned items!");
+        }
         exit();
     }
+    
+    //admins approving returns(fetch items to approve)
+    public function approve()
+    {
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        $user_email = $_SESSION['user_email'] ?? '';  
+        $user_name = explode('@', $user_email)[0]; 
+        $receivers = $this->model->getReceivers();
+    
+        $receiver_id = null;
+        foreach ($receivers as $receiver) {
+            if (strtolower($receiver['name']) === strtolower($user_name)) { 
+                $receiver_id = $receiver['id'];
+                break;
+            }
+        }
+    
+        $pendingApprovals = $this->model->getPendingApprovalsByUser($receiver_id);
 
-    if ($this->model === null) {
-        echo "Model not loaded properly!";
-        exit();
+        // Load the view
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventoryreturns/pendingapprovals.php';
     }
+    
+    //approve returned item
+    public function approveReturn() {
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            session_start();
 
-    $assignment_id = $_POST['assignment_id'] ?? ($_GET['assignment_id'] ?? null);
+            if (!isset($_SESSION['user_email'])) {
+                die("Unauthorized access.");
+            }
+            if ($this->model === null) {
+                echo "Model not loaded properly!";
+                exit();
+            }
+    
+            $return_id  = $_POST['return_id'];
+            $item_state = $_POST['item_state'];
+            $approved_by = $_SESSION['user_id']; 
+    
+            if ($this->model->approveReturn($return_id, $item_state, $approved_by)) {
+                $_SESSION['success'] = "Item return approved successfully!";
 
-    if (empty($assignment_id)) {
-        die('Assignment ID not provided.');
+                if ($item_state === 'lost') {
+
+                    header("Location: " . URL . "inventoryreturn/lostItems");
+                } elseif ($item_state === 'damaged') {
+
+                    header("Location: " . URL . "inventoryreturn/damagedItems");
+                } else { 
+
+                    header("Location: " . URL . "inventoryreturn/unassignedItems");
+                }
+                exit;
+            } else {
+                $_SESSION['error'] = "Failed to approve item return.";
+                header("Location: " . URL . "inventoryreturn/approve");
+                exit;
+            }
+        }
     }
-
-    echo "Assignment ID: " . htmlspecialchars($assignment_id);
-
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $assignment_id = intval($_POST['assignment_id']);
-        $return_date = trim($_POST['return_date']);
-        $receiver_id = intval($_POST['receiver_id']);
-        $status = 'pending';
-        $returned_by = $_SESSION['user'];
-
-        if (empty($returned_by)) {
-            die('Logged-in user not found.');
+        
+    //item classifications....
+    public function lostItems() 
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        $lostItems = $this->model->getLostItems();
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_lost.php';
+    }
+    //searh i n lost items
+    public function lostItemsSearch()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
         }
 
-        if (!empty($_POST['inventory_ids'])) {
-            foreach ($_POST['inventory_ids'] as $item_id) {
-                $item_id = intval($item_id);
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-                $existingReturn = $this->model->getItemReturnStatus($assignment_id, $item_id);
-                
-                if ($existingReturn) {
-                    if ($existingReturn['status'] === 'approved') {
-                        echo "Item ID {$item_id} has already been approved and cannot be returned again.";
-                        continue; 
-                    } else {
-                        echo "Item ID {$item_id} is already pending for return.";
-                        continue; 
-                    }
-                }
+        $lostItems = $this->model->getLostItemsSearch($search);
 
-                $this->model->addItemReturn($assignment_id, $item_id, $return_date, $receiver_id, $status, $returned_by);
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_lost.php';
+    }
+
+    public function damagedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        $damagedItems = $this->model->getDamagedItems();
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_damaged.php';
+    }
+    //search damaged items
+    public function searchDamagedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+        $damagedItems = $this->model->getDamagedItemsSearch($search);
+
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_damaged.php'; 
+    }
+
+    public function updateRepairStatus()    
+    {
+        session_start();
+    
+        if ($this->model === null) {
+            die("Model not loaded properly!");
+        }
+    
+        if (!isset($_SESSION['user_email'])) {
+            die("User not logged in!");
+        }
+    
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $item_id = $_POST['item_id'] ?? null; 
+            $repair_status = $_POST['repair_status'] ?? null;
+        
+            if (!$item_id || !$repair_status) {
+                die("Missing required fields! Item ID: " . ($item_id ?? 'N/A') . " | Repair Status: " . ($repair_status ?? 'N/A'));
             }
-        }     
-        header("Location: " . URL . "inventoryreturn?success=Items returned successfully!");
-        exit();
-
-    } else { // GET: Show form
-        $user_name = $_SESSION['user']; 
-        $items = $this->model->getApprovedAssignmentsByLoggedInUser($user_name);
-        $receivers = $this->model->getReceivers();
-        $assignment_id = $_GET['assignment_id'] ?? 0;
+        
+            $result = $this->model->updateRepairStatus($item_id, $repair_status);
+        
+            if (!$result) {
+                $_SESSION['error'] = "Failed to update repair status. Check if item exists.";
+            } else {
+                $_SESSION['success'] = "Repair status updated successfully!";
+            }
+        
+            header("Location: " . URL . "inventoryreturn/damagedItems");
+            exit();
+        }        
+    }
+    
+    public function unassignedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        $unassignedItems = $this->model->getUnassignedItems();
         
         require APP . 'view/_templates/header.php';
-        require APP . 'view/inventoryreturns/return_item_form.php';
-    }  
+        require APP . 'view/inventory/items_instock.php';
+    }
+    //search unassihnmed
+    public function searchUnassignedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    
+        if (!empty($search)) {
+            $unassignedItems = $this->model->getUnassignedItemsSearch($search);
+        } else {
+            $unassignedItems = $this->model->getUnassignedItems();
+        }
+    
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_instock.php';
+    }
+   
+    public function assignedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        $assignedItems = $this->model->getAssignedItems();
+        if (isset($_GET['search'])) {
+            $search = trim($_GET['search']);
+        } 
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/inventory_inuse.php';
+    }
+    //search assigned items
+    public function searchAssignedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        if (isset($_GET['search'])) {
+            $search = trim($_GET['search']);
+            $assignedItems = $this->model->getAssignedItemsSearch($search);
+            
+            require APP . 'view/_templates/header.php';
+            require APP . 'view/inventory/inventory_inuse.php';
+        } else {
+            header("Location: " . URL . "inventoryreturn/assignedItems");
+            exit();
+        }
+    }
+    
+    public function disposedItems()
+    {
+        session_start();
+
+        if (!isset($_SESSION['user_email'])) { 
+            die("User not logged in!");
+        }
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        // Fetch disposed items
+        $disposedItems = $this->model->getDisposedItems();
+
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_disposed.php';
+    }
+    //search disposred items
+    public function searchDisposedItems()
+    {
+        session_start();
+
+        if (!isset($_SESSION['user_email'])) { 
+            die("User not logged in!");
+        }
+
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+        $disposedItems = $this->model->getDisposedItemsSearch($search);
+
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_disposed.php'; 
+    }
+
+
 }
 
 
-// getting pending approvals for returned item
-public function pendingApprovals()
-{
-    session_start();
-    if (!isset($_SESSION['user'])) {
-        header("Location: " . URL . "login");
-        exit();
-    }
-    if ($this->model === null) {
-        echo "Model not loaded properly!";
-        exit();
-    }
 
-    $user_email = $_SESSION['user'];
-    $pendingApprovals = $this->model->getPendingApprovalsByUser($user_email);
-
-    // Debugging
-    echo '<pre>';
-    print_r($pendingApprovals);
-    echo '</pre>';
-
-    require APP . 'view/_templates/header.php';
-    require APP . 'view/inventoryreturns/pendingapprovals.php';
-}
-} 
 

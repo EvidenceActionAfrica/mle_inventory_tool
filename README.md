@@ -47,3 +47,8 @@ The **MLE Inventory Tool** is a web-based inventory management system designed f
    ```
 5. Access the tool at: **http://localhost:8000**
 
+Accessing Credentials...
+admin@test.com - super admin....password-p@55word
+tech@test.com - IT..............password-mle2025
+quality@test.com - QA/QC........password-mle2025
+staff@test.com - Mle user.......password-mle2025

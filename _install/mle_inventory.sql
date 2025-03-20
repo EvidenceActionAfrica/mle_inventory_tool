@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2025 at 02:01 PM
+-- Generation Time: Mar 20, 2025 at 01:43 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -43,7 +43,7 @@ INSERT INTO `categories` (`id`, `category`, `description`, `created_at`) VALUES
 (3, 'Mouse', 'Ligo', '2025-03-12 18:34:20'),
 (5, 'Printer', 'Laser Printers', '2025-03-12 18:34:53'),
 (9, 'Laptop', 'Macbook', '2025-03-12 18:45:08'),
-(10, 'Mouse', 'Ligo', '2025-03-12 18:45:20');
+(10, 'Mouse', 'hp', '2025-03-12 18:45:20');
 
 -- --------------------------------------------------------
 
@@ -68,12 +68,14 @@ CREATE TABLE `inventory` (
 --
 
 INSERT INTO `inventory` (`id`, `category_id`, `description`, `serial_number`, `tag_number`, `acquisition_date`, `acquisition_cost`, `warranty_date`, `created_at`) VALUES
-(1, 1, 'Samsung A52', 'SN12345', 'TAG001', '2025-03-10', 350.00, '2026-03-10', '2025-03-13 04:18:02'),
-(2, 3, 'Ligo Mouse', 'SN67890', 'TAG002', '2025-03-11', 20.00, '2026-03-11', '2025-03-13 04:18:02'),
-(3, 5, 'Laser Printer', 'SN11223', 'TAG003', '2025-03-11', 500.00, '2026-03-11', '2025-03-13 04:18:02'),
-(4, 9, 'Macbook Pro', 'SN44556', 'TAG004', '2025-03-12', 1500.00, '2027-03-12', '2025-03-13 04:18:02'),
-(5, 10, 'Ligo Mouse', 'SN77889', 'TAG005', '2025-03-12', 25.00, '2026-03-12', '2025-03-13 04:18:02'),
-(7, 9, 'Macbook', 'oiuytr', '09876', '2025-03-06', 888.00, '2025-06-25', '2025-03-13 19:53:56');
+(8, 10, 'hp', 'sn100', 'tag-001', '2025-03-05', 20.00, '2025-03-08', '2025-03-17 10:46:05'),
+(9, 10, 'hp', '10928', 'tag-002', '2025-03-12', 18.00, '2025-04-11', '2025-03-17 10:46:34'),
+(11, 9, 'Macbook', '4t5rfr5', 'tg-003', '2025-03-03', 100.00, '2025-04-24', '2025-03-17 10:47:09'),
+(12, 9, 'Macbook', 'qwedfr987', 'ea-1991', '2025-03-12', 134.00, '2025-04-26', '2025-03-17 10:47:40'),
+(13, 5, 'Laser Printers', 'qw23wese3', 'ea-1992', '2025-03-05', 456.00, '2025-04-10', '2025-03-17 10:48:18'),
+(14, 5, 'Laser Printers', '234ede4', 'ea-111', '2025-03-14', 123.00, '2025-05-01', '2025-03-17 10:48:39'),
+(15, 1, 'Samsung A52', '1q234', '1q2ws', '2025-03-14', 125.00, '2025-04-30', '2025-03-17 10:49:10'),
+(16, 1, 'Samsung A52', '3ewr4r', '0987uj', '2025-03-17', 90.00, '2025-05-09', '2025-03-17 10:49:34');
 
 -- --------------------------------------------------------
 
@@ -102,12 +104,12 @@ CREATE TABLE `inventory_assignment` (
 --
 
 INSERT INTO `inventory_assignment` (`id`, `name`, `email`, `role`, `serial_number`, `tag_number`, `managed_by`, `acknowledgment_status`, `created_at`, `updated_at`, `date_assigned`, `item`, `location`) VALUES
-(2, 'admin', 'admin@test.com', 'IS Manager', 'SN67890', 'TAG002', 'admin', 'acknowledged', '2025-03-13 12:47:33', '2025-03-14 03:48:14', '2025-03-13', 1, 'Amagoro Hub'),
-(3, 'admin', 'admin@test.com', 'IS Manager', 'SN11223', 'TAG003', 'admin', 'pending', '2025-03-13 12:47:33', '2025-03-13 13:50:01', '2025-03-13', 2, 'Amagoro Hub'),
-(8, 'staff@test.com', 'staff@test.com', 'MLE Associate IS', 'SN44556', 'TAG004', 'tech', 'pending', '2025-03-13 19:51:39', '2025-03-13 19:51:39', '2025-03-04', 4, 'Awendo Field Office'),
-(9, 'quality@test.com', 'quality@test.com', 'QA/QC Associate Manager', 'SN77889', 'TAG005', 'rhyttahkogi', 'pending', '2025-03-13 19:53:22', '2025-03-13 19:53:22', '2025-02-25', 5, 'Awendo Field Office'),
-(10, 'admin@test.com', 'admin@test.com', 'IS Manager', 'SN11223', 'TAG003', 'quality', 'pending', '2025-03-13 20:42:23', '2025-03-13 20:42:23', '2025-04-25', 3, 'Amagoro Hub'),
-(11, 'admin@test.com', 'admin@test.com', 'IS Manager', 'oiuytr', '09876', 'rhyttahkogi', 'pending', '2025-03-13 21:23:19', '2025-03-13 21:23:19', '2025-02-26', 7, 'Busia Field Office');
+(37, 'admin@test.com', 'admin@test.com', 'IS Manager', '10928', 'tag-002', 'monitor', 'acknowledged', '2025-03-19 15:59:09', '2025-03-19 15:59:14', '2025-03-18', 9, 'Kuria Hub'),
+(38, 'admin@test.com', 'admin@test.com', 'IS Manager', '1q234', '1q2ws', 'monitor', 'acknowledged', '2025-03-19 15:59:09', '2025-03-19 15:59:15', '2025-03-18', 15, 'Kuria Hub'),
+(39, 'admin@test.com', 'admin@test.com', 'IS Manager', 'sn100', 'tag-001', 'monitor', 'acknowledged', '2025-03-20 04:57:19', '2025-03-20 04:57:24', '2025-03-20', 8, 'Amagoro Hub'),
+(40, 'admin@test.com', 'admin@test.com', 'IS Manager', '4t5rfr5', 'tg-003', 'monitor', 'acknowledged', '2025-03-20 05:23:27', '2025-03-20 05:25:22', '2025-03-20', 11, 'Amagoro Hub'),
+(43, 'admin@test.com', 'admin@test.com', 'IS Manager', '10928', 'tag-002', 'rhyttahkogi', 'pending', '2025-03-20 06:38:54', '2025-03-20 06:38:54', '2025-03-11', 9, 'Amagoro Hub'),
+(44, 'staff@test.com', 'staff@test.com', 'MLE Associate IS', '3ewr4r', '0987uj', 'tech', 'acknowledged', '2025-03-20 12:42:30', '2025-03-20 12:42:38', '2025-03-19', 16, 'Kuria Hub');
 
 -- --------------------------------------------------------
 
@@ -118,7 +120,6 @@ INSERT INTO `inventory_assignment` (`id`, `name`, `email`, `role`, `serial_numbe
 CREATE TABLE `inventory_returned` (
   `id` int(11) NOT NULL,
   `assignment_id` int(11) NOT NULL,
-  `item_id` int(11) NOT NULL,
   `return_date` date NOT NULL,
   `receiver_id` int(11) NOT NULL,
   `returned_by` varchar(255) NOT NULL,
@@ -135,8 +136,11 @@ CREATE TABLE `inventory_returned` (
 -- Dumping data for table `inventory_returned`
 --
 
-INSERT INTO `inventory_returned` (`id`, `assignment_id`, `item_id`, `return_date`, `receiver_id`, `returned_by`, `status`, `item_state`, `approved_by`, `approved_date`, `repair_status`, `created_at`, `updated_at`) VALUES
-(7, 2, 2, '2025-02-25', 2, 'Admin', 'pending', 'functional', NULL, NULL, NULL, '2025-03-14 12:49:22', '2025-03-14 12:49:22');
+INSERT INTO `inventory_returned` (`id`, `assignment_id`, `return_date`, `receiver_id`, `returned_by`, `status`, `item_state`, `approved_by`, `approved_date`, `repair_status`, `created_at`, `updated_at`) VALUES
+(49, 37, '2025-03-19', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-03-19 19:00:18', 'Repairable', '2025-03-19 15:59:38', '2025-03-19 16:00:25'),
+(50, 38, '2025-03-19', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-03-19 19:00:32', 'Unrepairable', '2025-03-19 15:59:38', '2025-03-19 16:00:37'),
+(52, 39, '2025-03-20', 2, 'admin@test.com', 'approved', 'lost', NULL, '2025-03-20 12:11:00', NULL, '2025-03-20 09:10:47', '2025-03-20 09:11:00'),
+(53, 44, '2025-03-20', 2, 'staff@test.com', 'approved', 'functional', NULL, '2025-03-20 15:42:56', NULL, '2025-03-20 12:42:47', '2025-03-20 12:42:56');
 
 -- --------------------------------------------------------
 
@@ -209,9 +213,9 @@ CREATE TABLE `staff_login` (
 INSERT INTO `staff_login` (`id`, `email`, `password`, `role`, `department`, `position`, `created_at`, `updated_at`) VALUES
 (1, 'admin@test.com', '$2y$10$A/rGSd51afa7/5.lakeWP.AIH0noBnLfryKuaUtIZdLYkA0uKw2AS', 'super_admin', 'IS', 'Manager', '2025-03-12 13:13:02', '2025-03-14 09:52:04'),
 (2, 'tech@test.com', '$2y$10$fMqQh24UHICP3P2Hml2lYefr0S/zjhBASBsyMDNDe8H8epVnNAxEW', 'admin', 'IT', 'Senior Manager', '2025-03-12 13:13:02', '2025-03-14 11:40:37'),
-(3, 'quality@test.com', 'mle2025', 'admin', 'QA/QC', 'Associate Manager', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
-(4, 'monitor@test.com', 'mle2025', 'admin', 'MLE', 'Director', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
-(5, 'staff@test.com', 'mle2025', 'staff', 'MLE', 'Associate IS', '2025-03-12 13:13:02', '2025-03-12 13:13:02'),
+(3, 'quality@test.com', '$2y$10$eYftVMN2IY4MSIsOaEBD4uYFcwhAkeyjIdkDxBE3CuO7IZwwuVeyS', 'admin', 'QA/QC', 'Associate Manager', '2025-03-12 13:13:02', '2025-03-18 11:40:56'),
+(4, 'monitor@test.com', '$2y$10$6n7ACWUT3EH41BYGnrVfGOIV5Wh3y4KARcOfoDkkpklTrU4Qty89u', 'admin', 'MLE', 'Director', '2025-03-12 13:13:02', '2025-03-18 11:41:58'),
+(5, 'staff@test.com', '$2y$10$BpgfrYEf/vQzte42df1VAuL5Tq9syy6uwKrCz0IzhpLhMyzGTlsGq', 'staff', 'MLE', 'Associate IS', '2025-03-12 13:13:02', '2025-03-18 11:42:57'),
 (7, 'rhyttahkogi@gmail.com', '$2y$10$r/H.vLc1QG5XgRdOqZ4VHewhcUjs9Z9NIHPYmBRV7Oz9sKLFM325C', 'staff', 'MLE-D', 'Associate IS', '2025-03-13 11:15:06', '2025-03-13 11:15:06');
 
 --
@@ -245,7 +249,6 @@ ALTER TABLE `inventory_assignment`
 ALTER TABLE `inventory_returned`
   ADD PRIMARY KEY (`id`),
   ADD KEY `assignment_id` (`assignment_id`),
-  ADD KEY `item_id` (`item_id`),
   ADD KEY `receiver_id` (`receiver_id`),
   ADD KEY `approved_by` (`approved_by`);
 
@@ -284,19 +287,19 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `inventory_assignment`
 --
 ALTER TABLE `inventory_assignment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `inventory_returned`
 --
 ALTER TABLE `inventory_returned`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `locations`
@@ -331,7 +334,6 @@ ALTER TABLE `inventory`
 --
 ALTER TABLE `inventory_returned`
   ADD CONSTRAINT `inventory_returned_ibfk_1` FOREIGN KEY (`assignment_id`) REFERENCES `inventory_assignment` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `inventory_returned_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inventory` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `inventory_returned_ibfk_3` FOREIGN KEY (`receiver_id`) REFERENCES `staff_login` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `inventory_returned_ibfk_4` FOREIGN KEY (`approved_by`) REFERENCES `staff_login` (`id`) ON DELETE SET NULL;
 

@@ -9,6 +9,12 @@ class Inventory extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = !empty($search_query) ? $this->model->searchItems($search_query) : $this->model->getItems();
 
@@ -21,6 +27,12 @@ class Inventory extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -48,6 +60,12 @@ class Inventory extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -81,6 +99,12 @@ class Inventory extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id'])) {
             $id = intval($_POST['id']);
             $this->model->deleteItem($id);
@@ -98,6 +122,12 @@ class Inventory extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';

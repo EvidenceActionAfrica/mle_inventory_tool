@@ -72,3 +72,44 @@
         <button type="submit" name="add_assignment" class="submit-btn">Assign Items</button>
     </form>
 </div>
+<script>
+    document.getElementById('add-item-btn').addEventListener('click', function () {
+        let container = document.getElementById('item-container');
+        let newItemGroup = document.createElement('div');
+        newItemGroup.classList.add('form-group', 'item-group');
+
+        newItemGroup.innerHTML = `
+            <label for="inventory_id[]">Select Item:</label>
+            <select name="inventory_id[]" required>
+                <option value="">Choose an item</option>
+                <?php foreach ($unassignedItems as $item): ?>
+                    <option value="<?= $item['id']; ?>">
+                        <?= htmlspecialchars($item['description']); ?> (<?= htmlspecialchars($item['serial_number']); ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="button" class="remove-item-btn" onclick="removeItem(this)">Remove</button>
+        `;
+
+        container.appendChild(newItemGroup);
+        updateRemoveButtons();
+    });
+
+    function removeItem(button) {
+        let container = document.getElementById('item-container');
+        if (container.children.length > 1) {
+            button.parentElement.remove();
+        }
+        updateRemoveButtons();
+    }
+
+    function updateRemoveButtons() {
+        let removeButtons = document.querySelectorAll('.remove-item-btn');
+        removeButtons.forEach(button => {
+            button.style.display = (removeButtons.length > 1) ? 'inline-block' : 'none';
+        });
+    }
+
+    // Ensure remove button is properly displayed on page load
+    updateRemoveButtons();
+</script>

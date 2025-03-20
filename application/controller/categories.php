@@ -10,6 +10,12 @@ class categories extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         // getting all categories
         $categories = $this->model->getCategories();
 
@@ -21,6 +27,12 @@ class categories extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -37,6 +49,12 @@ class categories extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = intval($_POST['id']);
             $category_name = trim($_POST['category_name']);
@@ -51,6 +69,12 @@ class categories extends Controller
     public function delete() {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if (isset($_GET['delete'])) {

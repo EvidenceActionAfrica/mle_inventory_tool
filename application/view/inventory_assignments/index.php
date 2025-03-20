@@ -12,7 +12,14 @@
     <!-- Top Bar (Search + Add Button + Filter) -->
     <div class="top-bar">
         <!-- Search Form -->
-        
+        <form method="GET" action="<?= URL ?>inventoryassignment/search" class="search-form">
+            <input type="text" name="search" placeholder="Search by Username, Tag, Serial Number, or Status" 
+                value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" required>
+            <button type="submit" aria-label="Search for inventory assignments">Search</button>
+            <?php if (!empty($_GET['search'])): ?>
+                <a href="<?= URL ?>inventoryassignment" class="reset-search">Reset</a>
+            <?php endif; ?>
+        </form>
 
         <!-- Assign New Item Button -->
         <form action="<?php echo URL; ?>inventoryassignment/add" method="GET">
@@ -33,7 +40,7 @@
                 <th>Date Assigned</th>
                 <th>Managed By</th>
                 <th>Acknowledgment Status</th>
-                <!-- <th>Actions</th> -->
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -54,16 +61,20 @@
                             </span>
                         </td>
                         <td>
-                        <!-- <a href="<?= URL ?>inventoryassignment/edit?assignment_id=<?= htmlspecialchars($assignment['id']); ?>">Edit</a> -->
-                            <!-- Delete Form: Only allow deleting unacknowledged assignments -->
-                            <?php if ($assignment['acknowledgment_status'] !== 'acknowledged'): ?>
-                                <form action="<?= URL; ?>InventoryAssignment/delete" method="POST" 
+                            <?php if ($assignment['acknowledgment_status'] === 'pending'): ?>
+                                <a href="<?= URL ?>inventoryassignment/edit/<?= $assignment['id']; ?>">Edit</a>
+                            <?php else: ?>
+                                <span>N/A</span>
+                            <?php endif; ?>
+
+                            <?php if ($assignment['acknowledgment_status'] === 'pending'): ?>
+                                <form action="<?= URL; ?>inventoryassignment/delete" method="POST" 
                                     onsubmit="return confirm('Are you sure you want to delete this assignment?');" style="display:inline;">
                                     <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']); ?>">
-                                    <!-- <button type="submit" name="delete" class="delete-btn">Delete</button> -->
+                                    <button type="submit" name="delete" class="delete-btn">Delete</button>
                                 </form>
                             <?php else: ?>
-                                <!-- <button class="delete-btn" disabled>Delete</button> -->
+                                <span>N/A</span>
                             <?php endif; ?>
                         </td>
                     </tr>

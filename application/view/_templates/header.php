@@ -1,3 +1,9 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$role = $_SESSION['role'] ?? null;
+?>
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -53,8 +59,10 @@
         }
 
         .active {
-            background-color: #ecfafb;
+
             border-bottom: 3px solid #05545a;
+            background-color: #d5f4f7 !important;
+            font-weight: 600;
         }
 
         .dropdown {
@@ -99,14 +107,21 @@
     <body>
 
     <?php
-    $current_page = basename($_SERVER['REQUEST_URI']);
-    $assets_pages = ['instock', 'inuse'];
-    $collections_pages = ['pendin', 'lost', 'repairs', 'disposed'];
-    $config_pages = ['inventory', 'categories'];
-    $admin_pages = ['auth_users', 'offices', 'locations', 'positions', 'departments'];
-    ?>
+$current_page = basename($_SERVER['REQUEST_URI']);
 
-    <div class="top-nav dfaicjcsbg2">
+// Define sections with corresponding URLs
+$assets_pages = ['unassignedItems', 'assignedItems'];
+$collections_pages = ['approve', 'lostItems', 'damagedItems', 'disposedItems'];
+$config_pages = ['inventory', 'categories/getCategory'];
+$admin_pages = ['users/getUsers', 'office/getOffices', 'location/getLocations'];
+
+function isActive($page, $current_page)
+{
+    return strpos($current_page, $page) !== false ? 'active' : '';
+}
+?>
+
+<div class="top-nav dfaicjcsbg2">
 
     <a href="<?php echo URL; ?>home">
         <img src="<?php echo URL; ?>img/ea_logo.png" alt="logo" style="padding: 10px; width: 150px; height: auto;">
@@ -114,54 +129,65 @@
 
     <div>
         <!-- Main links -->
-        <a href="<?php echo URL; ?>InventoryAssignment/pending" class="nav-option <?php echo $current_page == 'InventoryAssignment/pending' ? 'active' : ''; ?>">PENDING ASSIGNMENTS</a>
-
-        <a href="<?php echo URL; ?>InventoryAssignment" class="nav-option <?php echo $current_page == 'InventoryAssignment' ? 'active' : ''; ?>">ASSIGNMENTS</a>
-
-        <a href="<?php echo URL; ?>inventoryreturn" class="nav-option <?php echo $current_page == 'inventoryreturn' ? 'active' : ''; ?>">RETURN ITEM</a>
-
+        <?php if($role === 'admin'|| $role === 'staff' || $role === 'super_admin'): ?>
+        <a href="<?php echo URL; ?>InventoryAssignment/pending" class="nav-option <?php echo isActive('InventoryAssignment/pending', $current_page); ?>">PENDING ASSIGNMENTS</a>
+        <?php endif; ?>
+        <?php if($role === 'admin'||  $role === 'super_admin'): ?>
+        <a href="<?php echo URL; ?>InventoryAssignment" class="nav-option <?php echo isActive('InventoryAssignment', $current_page); ?>">ASSIGNMENTS</a>
+        <?php endif; ?>
+        <?php if($role === 'admin'|| $role === 'staff' || $role === 'super_admin'): ?>
+        <a href="<?php echo URL; ?>inventoryreturn" class="nav-option <?php echo isActive('inventoryreturn', $current_page); ?>">RETURN ITEM</a>
+        <?php endif; ?>
         <!-- Dropdown menus -->
+        <?php if($role === 'admin'||  $role === 'super_admin'): ?>
         <div class="dropdown">
-        <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $assets_pages) ? 'active' : ''; ?>">ASSETS</a>
-        <div class="dropdown-menu">
-            <a href="<?php echo URL; ?>assets/instock" class="dropdown-item <?php echo $current_page == 'instock' ? 'active' : ''; ?>">In-Stock</a>
-            <a href="<?php echo URL; ?>inventory/" class="dropdown-item <?php echo $current_page == 'inuse' ? 'active' : ''; ?>">In-Use</a>
+            <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $assets_pages) ? 'active' : ''; ?>">ASSETS</a>
+            <div class="dropdown-menu">
+                <a href="<?php echo URL; ?>inventoryreturn/unassignedItems" class="dropdown-item <?php echo isActive('unassignedItems', $current_page); ?>">In-Stock</a>
+                <a href="<?php echo URL; ?>inventoryreturn/assignedItems" class="dropdown-item <?php echo isActive('assignedItems', $current_page); ?>">In-Use</a>
+            </div>
         </div>
-        </div>
-
+        <?php endif; ?>
+        <?php if($role === 'admin'|| $role === 'super_admin'): ?>
         <div class="dropdown">
-        <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $collections_pages) ? 'active' : ''; ?>">COLLECTIONS</a>
-        <div class="dropdown-menu">
-        <a href="<?php echo URL; ?>inventoryreturn/pendingapprovals" class="dropdown-item <?php echo $current_page == 'inventoryreturn/pendingapprovals' ? 'active' : ''; ?>">Pending Approvals</a>
-            <a href="<?php echo URL; ?>collections/lost" class="dropdown-item <?php echo $current_page == 'lost' ? 'active' : ''; ?>">Lost Inventory</a>
-            <a href="<?php echo URL; ?>collections/repairs" class="dropdown-item <?php echo $current_page == 'repairs' ? 'active' : ''; ?>">Repairs</a>
-            <a href="<?php echo URL; ?>collections/disposed" class="dropdown-item <?php echo $current_page == 'disposed' ? 'active' : ''; ?>">Disposed</a>
+            <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $collections_pages) ? 'active' : ''; ?>">COLLECTIONS</a>
+            <div class="dropdown-menu">
+                <a href="<?php echo URL; ?>inventoryreturn/approve" class="dropdown-item <?php echo isActive('approve', $current_page); ?>">Pending Approvals</a>
+                <a href="<?php echo URL; ?>inventoryreturn/lostItems" class="dropdown-item <?php echo isActive('lostItems', $current_page); ?>">Lost Inventory</a>
+                <a href="<?php echo URL; ?>inventoryreturn/damagedItems" class="dropdown-item <?php echo isActive('damagedItems', $current_page); ?>">Repairs</a>
+                <a href="<?php echo URL; ?>inventoryreturn/disposedItems" class="dropdown-item <?php echo isActive('disposedItems', $current_page); ?>">Disposed</a>
+            </div>
         </div>
-        </div>
-
+        <?php endif; ?>
+        <?php if($role === 'admin'|| $role === 'super_admin'): ?>
         <div class="dropdown">
-        <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $config_pages) ? 'active' : ''; ?>">CONFIGURATIONS</a>
-        <div class="dropdown-menu">
-            <a href="<?php echo URL; ?>inventory" class="dropdown-item <?php echo $current_page == 'inventory' ? 'active' : ''; ?>">Inventory</a>
-            <a href="<?php echo URL; ?>categories/getCategory" class="dropdown-item <?php echo $current_page == 'categories' ? 'active' : ''; ?>">Categories</a>
+            <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $config_pages) ? 'active' : ''; ?>">CONFIGURATIONS</a>
+            <div class="dropdown-menu">
+                <a href="<?php echo URL; ?>inventory" class="dropdown-item <?php echo isActive('inventory', $current_page); ?>">Inventory</a>
+                <a href="<?php echo URL; ?>categories/getCategory" class="dropdown-item <?php echo isActive('categories/getCategory', $current_page); ?>">Categories</a>
+            </div>
         </div>
-        </div>
-
+        <?php endif; ?>
+        <?php if($role === 'super_admin'): ?>
         <div class="dropdown">
-        <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $admin_pages) ? 'active' : ''; ?>">ADMIN</a>
-        <div class="dropdown-menu">
-            <a href="<?php echo URL; ?>users/getUsers" class="dropdown-item <?php echo $current_page == 'users/getUsers' ? 'active' : ''; ?>">Users</a>
-            <a href="<?php echo URL; ?>office/getOffices" class="dropdown-item <?php echo $current_page == 'office/getOffices' ? 'active' : ''; ?>">Office</a>
-            <a href="<?php echo URL; ?>location/getLocations" class="dropdown-item <?php echo $current_page == 'locations/getLocations' ? 'active' : ''; ?>">Location</a>
+            <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $admin_pages) ? 'active' : ''; ?>">ADMIN</a>
+            <div class="dropdown-menu">
+                <a href="<?php echo URL; ?>users/getUsers" class="dropdown-item <?php echo isActive('users/getUsers', $current_page); ?>">Users</a>
+                <a href="<?php echo URL; ?>office/getOffices" class="dropdown-item <?php echo isActive('office/getOffices', $current_page); ?>">Office</a>
+                <a href="<?php echo URL; ?>location/getLocations" class="dropdown-item <?php echo isActive('location/getLocations', $current_page); ?>">Location</a>
+            </div>
         </div>
-        </div>
+        <?php endif; ?>
     </div>
 
     <div class="dfaicjcsbg2">
-    <a href="<?php echo URL; ?>login/logout" class="bt-logout">LOGOUT</a>
+        <?php 
+        if (isset($_SESSION['user_email'])) {
+            $user_email = $_SESSION['user_email'];
+            $user_name = ucwords(explode('@', $user_email)[0]);
+            echo "<p><b> " . htmlspecialchars($user_name) . "!</b></p>";
+        }
+        ?>
+        <a href="<?php echo URL; ?>login/logout" class="bt-logout">LOGOUT</a>
     </div>
-
-    </div>
-
-    </body>
-    </html>
+</div>

@@ -1,4 +1,6 @@
-<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
+<link rel="stylesheet" href="<?php echo URL; ?>css/tables.css">
+<link rel="stylesheet" href="<?php echo URL; ?>css/style.css">
+
 
 <div class="container mt-5">
     <h2>Pending Assignments</h2>

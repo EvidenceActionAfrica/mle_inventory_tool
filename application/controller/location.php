@@ -9,6 +9,12 @@ class location extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         $locations = $this->model->getLocations();
 
         require APP . 'view/_templates/header.php';
@@ -20,6 +26,12 @@ class location extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -37,6 +49,12 @@ class location extends Controller
             echo "Model not loaded properly!";
             exit();
         }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = intval($_POST['id']);
             $location_name = trim($_POST['location_name']);
@@ -51,6 +69,12 @@ class location extends Controller
     {
         if ($this->model === null) {
             echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
             exit();
         }
         if (isset($_GET['delete'])) {
