@@ -1340,6 +1340,96 @@ class Model
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
+    //managers reports
+    //assigned items report
+    public function getAllAssignmentsByManager($manager_username, $search = '') {
+        $sql = "SELECT 
+                    ia.id,
+                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
+                    ia.email,
+                    sl.department,
+                    sl.position,
+                    ia.location,
+                    i.category_id,
+                    i.description,
+                    ia.serial_number,
+                    ia.tag_number,
+                    ia.date_assigned,
+                    ia.managed_by,
+                    ia.acknowledgment_status,
+                    ia.created_at,
+                    ia.updated_at
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN staff_login sl ON ia.email = sl.email
+                WHERE ia.managed_by = :manager_username";
+    
+        // If there's a search term, add a filter
+        if (!empty($search)) {
+            $sql .= " AND (
+                        i.description LIKE :search 
+                        OR ia.serial_number LIKE :search 
+                        OR ia.tag_number LIKE :search
+                        OR ia.acknowledgment_status LIKE :search
+                        OR CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                                  LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) LIKE :search
+                    )";
+        }
+    
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':manager_username', $manager_username, PDO::PARAM_STR);
+    
+        if (!empty($search)) {
+            $searchTerm = "%$search%"; 
+            $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+        }
+    
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    //returned items report
+    public function getReturnedItemsByManager($manager_username, $search = '')
+    {
+        try {
+            $sql = "SELECT ir.id, i.description, i.serial_number, 
+                        SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
+                        ir.return_date, ir.status, 
+                        SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
+                    FROM inventory_returned ir
+                    INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
+                    INNER JOIN inventory i ON ia.item = i.id  
+                    INNER JOIN staff_login sl ON ir.returned_by = sl.email
+                    INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
+                    WHERE ia.managed_by = :manager_username";
+
+            // Apply search filter if provided
+            if (!empty($search)) {
+                $sql .= " AND (
+                            i.description LIKE :search 
+                            OR i.serial_number LIKE :search 
+                            OR ir.status LIKE :search
+                            OR SUBSTRING_INDEX(sl.email, '@', 1) LIKE :search
+                        )";
+            }
+
+            $query = $this->db->prepare($sql);
+            $query->bindParam(':manager_username', $manager_username, PDO::PARAM_STR);
+
+            if (!empty($search)) {
+                $searchTerm = "%$search%"; // Wildcard search
+                $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+            }
+
+            $query->execute();
+            return $query->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
+        }
+    }
+
+    
     
 
 }

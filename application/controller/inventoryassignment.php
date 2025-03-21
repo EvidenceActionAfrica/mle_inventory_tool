@@ -167,8 +167,8 @@ class InventoryAssignment extends Controller
     }
 
     // Acknowledge selected assignments
-        public function acknowledge()
-        {
+    public function acknowledge()
+    {
             if ($this->model === null) {
                 echo "Model not loaded properly!";
                 exit();
@@ -195,9 +195,32 @@ class InventoryAssignment extends Controller
 
             header("Location: " . URL . "inventoryassignment/pending");
             exit();
-        }
+    }
 
+    //report
+    //managers reports of assigned items
+    public function managerAssignments() {
+        session_start();
 
+    if (!isset($_SESSION['user_email'])) {
+        header("Location: " . URL . "login");
+        exit();
+    }
+    if ($this->model === null) {
+        echo "Model not loaded properly!";
+        exit();
+    }
+
+    $email = $_SESSION['user_email'];
+    $username = explode('@', $email)[0];
+    
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $assignments = $this->model->getAllAssignmentsByManager($username);
+
+    require APP . 'view/_templates/header.php';
+    require APP . 'view/inventory_assignments/user_assignments.php';
+    }
+    
 }
 
 ?>

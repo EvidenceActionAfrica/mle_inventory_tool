@@ -419,7 +419,31 @@ class inventoryreturn extends Controller
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_disposed.php'; 
     }
+    
+    //managers reports
+    //returned items for staff
+    public function returnedItems()
+    {
+        session_start();
 
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        $manager_username = strtok($_SESSION['user_email'], '@'); 
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+        $returnedItems = $this->model->getReturnedItemsByManager($manager_username, $search);
+
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventoryreturns/users_returned_items.php';
+    }
 
 }
 

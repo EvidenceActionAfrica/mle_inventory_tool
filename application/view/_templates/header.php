@@ -111,6 +111,7 @@ $current_page = basename($_SERVER['REQUEST_URI']);
 
 // Define sections with corresponding URLs
 $assets_pages = ['unassignedItems', 'assignedItems'];
+$reports_pages = ['managerAssignments', 'returnedItems'];
 $collections_pages = ['approve', 'lostItems', 'damagedItems', 'disposedItems'];
 $config_pages = ['inventory', 'categories/getCategory'];
 $admin_pages = ['users/getUsers', 'office/getOffices', 'location/getLocations'];
@@ -148,6 +149,7 @@ function isActive($page, $current_page)
             </div>
         </div>
         <?php endif; ?>
+
         <?php if($role === 'admin'|| $role === 'super_admin'): ?>
         <div class="dropdown">
             <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $collections_pages) ? 'active' : ''; ?>">COLLECTIONS</a>
@@ -156,6 +158,16 @@ function isActive($page, $current_page)
                 <a href="<?php echo URL; ?>inventoryreturn/lostItems" class="dropdown-item <?php echo isActive('lostItems', $current_page); ?>">Lost Inventory</a>
                 <a href="<?php echo URL; ?>inventoryreturn/damagedItems" class="dropdown-item <?php echo isActive('damagedItems', $current_page); ?>">Repairs</a>
                 <a href="<?php echo URL; ?>inventoryreturn/disposedItems" class="dropdown-item <?php echo isActive('disposedItems', $current_page); ?>">Disposed</a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if($role === 'admin'|| $role === 'staff' || $role === 'super_admin'): ?>
+        <div class="dropdown">
+            <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $reports_pages) ? 'active' : ''; ?>">REPORTS</a>
+            <div class="dropdown-menu">
+                <a href="<?php echo URL; ?>InventoryAssignment/managerAssignments" class="dropdown-item <?php echo isActive('managerAssignments', $current_page); ?>">Staff Assignments</a>
+                <a href="<?php echo URL; ?>inventoryreturn/returnedItems" class="dropdown-item <?php echo isActive('returnedItems', $current_page); ?>">Staff Returned Items</a>
             </div>
         </div>
         <?php endif; ?>
