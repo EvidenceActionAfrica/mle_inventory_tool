@@ -16,7 +16,7 @@ class location extends Controller
             exit();
         }
         $locations = $this->model->getLocations();
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/configurations/location.php';
     }

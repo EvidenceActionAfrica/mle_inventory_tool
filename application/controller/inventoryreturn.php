@@ -21,7 +21,7 @@ class inventoryreturn extends Controller
         $returned_by = $_SESSION['user_email']; // Adjust to match your session variable for the logged-in user's email
         $returnedItems = $this->model->getReturnedItems($returned_by);
         $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
-        
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/index.php';
     }
@@ -141,6 +141,7 @@ class inventoryreturn extends Controller
         $pendingApprovals = $this->model->getPendingApprovalsByUser($receiver_id);
 
         // Load the view
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/pendingapprovals.php';
     }
@@ -198,6 +199,7 @@ class inventoryreturn extends Controller
             exit();
         }
         $lostItems = $this->model->getLostItems();
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_lost.php';
     }
@@ -218,7 +220,7 @@ class inventoryreturn extends Controller
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
         $lostItems = $this->model->getLostItemsSearch($search);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_lost.php';
     }
@@ -236,6 +238,7 @@ class inventoryreturn extends Controller
             exit();
         }
         $damagedItems = $this->model->getDamagedItems();
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_damaged.php';
     }
@@ -256,7 +259,7 @@ class inventoryreturn extends Controller
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
         $damagedItems = $this->model->getDamagedItemsSearch($search);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_damaged.php'; 
     }
@@ -307,7 +310,7 @@ class inventoryreturn extends Controller
             exit();
         }
         $unassignedItems = $this->model->getUnassignedItems();
-        
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_instock.php';
     }
@@ -331,7 +334,7 @@ class inventoryreturn extends Controller
         } else {
             $unassignedItems = $this->model->getUnassignedItems();
         }
-    
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_instock.php';
     }
@@ -352,6 +355,7 @@ class inventoryreturn extends Controller
         if (isset($_GET['search'])) {
             $search = trim($_GET['search']);
         } 
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/inventory_inuse.php';
     }
@@ -371,7 +375,7 @@ class inventoryreturn extends Controller
         if (isset($_GET['search'])) {
             $search = trim($_GET['search']);
             $assignedItems = $this->model->getAssignedItemsSearch($search);
-            
+            require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory/inventory_inuse.php';
         } else {
@@ -394,7 +398,7 @@ class inventoryreturn extends Controller
 
         // Fetch disposed items
         $disposedItems = $this->model->getDisposedItems();
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_disposed.php';
     }
@@ -415,7 +419,7 @@ class inventoryreturn extends Controller
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
         $disposedItems = $this->model->getDisposedItemsSearch($search);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_disposed.php'; 
     }
@@ -440,7 +444,7 @@ class inventoryreturn extends Controller
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
         $returnedItems = $this->model->getReturnedItemsByManager($manager_username, $search);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/users_returned_items.php';
     }

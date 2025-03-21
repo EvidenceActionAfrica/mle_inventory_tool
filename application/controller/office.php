@@ -17,7 +17,7 @@ class Office extends Controller
         }
         $offices = $this->model->getOffices();
         $locations = $this->model->getLocations(); // For dropdowns in forms
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/configurations/office.php';
     }

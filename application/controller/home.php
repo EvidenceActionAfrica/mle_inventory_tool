@@ -16,7 +16,7 @@ class Home extends Controller
      */
     public function index()
     {
-    
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/home_header.php';
         require APP . 'view/home/index.php';
     }

@@ -18,6 +18,7 @@ class Inventory extends Controller
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = !empty($search_query) ? $this->model->searchItems($search_query) : $this->model->getItems();
 
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/index.php';
     }
@@ -49,6 +50,7 @@ class Inventory extends Controller
             exit();
         } else {
             $categories = $this->model->getCategories() ?? [];
+            require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory/add_inventory_item.php';
         }
@@ -85,7 +87,7 @@ class Inventory extends Controller
 
             $item = $this->model->getItemById($id);
             $categories = $this->model->getCategories() ?? [];
-    
+            require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory/edit_inventory_item.php';
         }
@@ -132,7 +134,7 @@ class Inventory extends Controller
         }
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = $this->model->searchItems($search_query);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/index.php';
     }

@@ -16,7 +16,7 @@ class Users extends Controller
                 exit();
             }
         $users = $this->model->get_users();
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/configurations/staff_view.php';
     }

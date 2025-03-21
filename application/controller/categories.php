@@ -19,6 +19,7 @@ class categories extends Controller
         // getting all categories
         $categories = $this->model->getCategories();
 
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/categories.php';
     }

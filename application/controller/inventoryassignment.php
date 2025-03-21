@@ -16,7 +16,7 @@ class InventoryAssignment extends Controller
             exit();
         }
         $assignments = $this->model->getAllAssignments();
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory_assignments/index.php';
     }
@@ -47,7 +47,7 @@ class InventoryAssignment extends Controller
             $unassignedItems = $this->model->getUnassignedItems();
             $users = $this->model->getAllUsers();
             $offices = $this->model->getOffices(); 
-
+            require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory_assignments/add_assignment.php';
         }
@@ -106,6 +106,7 @@ class InventoryAssignment extends Controller
             }
         } else {
             // Load edit view with necessary data
+            require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory_assignments/edit_assignment.php';
         }
@@ -142,6 +143,7 @@ class InventoryAssignment extends Controller
         $assignments = $this->model->searchAssignments($search_query);
     
         require APP . 'view/_templates/header.php';
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/inventory_assignments/index.php'; 
     }
     
@@ -161,7 +163,7 @@ class InventoryAssignment extends Controller
 
         $user_email = $_SESSION['user_email']; 
         $pendingAssignments = $this->model->getPendingAssignmentsByLoggedInUser($user_email);
-
+        require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory_assignments/pending_assignments.php';
     }
@@ -218,6 +220,7 @@ class InventoryAssignment extends Controller
     $assignments = $this->model->getAllAssignmentsByManager($username);
 
     require APP . 'view/_templates/header.php';
+    require APP . 'view/_templates/sessions.php';
     require APP . 'view/inventory_assignments/user_assignments.php';
     }
     
