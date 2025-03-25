@@ -111,10 +111,10 @@ $current_page = basename($_SERVER['REQUEST_URI']);
 
 // Define sections with corresponding URLs
 $assets_pages = ['unassignedItems', 'assignedItems'];
-$reports_pages = ['managerAssignments', 'returnedItems'];
+$reports_pages = ['staffassignments', 'staffreturneditems'];
 $collections_pages = ['approve', 'lostItems', 'damagedItems', 'disposedItems'];
-$config_pages = ['inventory', 'categories/getCategory'];
-$admin_pages = ['users/getUsers', 'office/getOffices', 'location/getLocations'];
+$config_pages = ['inventory', 'users/getUsers','categories/getCategory'];
+$admin_pages = [ 'office/getOffices', 'location/getLocations','positions/getPositions','department/getDepartments'];
 
 function isActive($page, $current_page)
 {
@@ -166,8 +166,8 @@ function isActive($page, $current_page)
         <div class="dropdown">
             <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $reports_pages) ? 'active' : ''; ?>">REPORTS</a>
             <div class="dropdown-menu">
-                <a href="<?php echo URL; ?>InventoryAssignment/managerAssignments" class="dropdown-item <?php echo isActive('managerAssignments', $current_page); ?>">Staff Assignments</a>
-                <a href="<?php echo URL; ?>inventoryreturn/returnedItems" class="dropdown-item <?php echo isActive('returnedItems', $current_page); ?>">Staff Returned Items</a>
+                <a href="<?php echo URL; ?>InventoryAssignment/staffassignments" class="dropdown-item <?php echo isActive('managerAssignments', $current_page); ?>">Staff Assignments</a>
+                <a href="<?php echo URL; ?>inventoryreturn/staffreturneditems" class="dropdown-item <?php echo isActive('returnedItems', $current_page); ?>">Staff Returned Items</a>
             </div>
         </div>
         <?php endif; ?>
@@ -177,6 +177,7 @@ function isActive($page, $current_page)
             <div class="dropdown-menu">
                 <a href="<?php echo URL; ?>inventory" class="dropdown-item <?php echo isActive('inventory', $current_page); ?>">Inventory</a>
                 <a href="<?php echo URL; ?>categories/getCategory" class="dropdown-item <?php echo isActive('categories/getCategory', $current_page); ?>">Categories</a>
+                <a href="<?php echo URL; ?>users/getUsers" class="dropdown-item <?php echo isActive('users/getUsers', $current_page); ?>">Users</a>
             </div>
         </div>
         <?php endif; ?>
@@ -184,7 +185,8 @@ function isActive($page, $current_page)
         <div class="dropdown">
             <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $admin_pages) ? 'active' : ''; ?>">ADMIN</a>
             <div class="dropdown-menu">
-                <a href="<?php echo URL; ?>users/getUsers" class="dropdown-item <?php echo isActive('users/getUsers', $current_page); ?>">Users</a>
+                <a href="<?php echo URL; ?>positions/getPositions" class="dropdown-item <?php echo isActive('positions/getPositions', $current_page); ?>">Positons</a>
+                <a href="<?php echo URL; ?>department/getDepartments" class="dropdown-item <?php echo isActive('department/getDepartments', $current_page); ?>">Departments</a>
                 <a href="<?php echo URL; ?>office/getOffices" class="dropdown-item <?php echo isActive('office/getOffices', $current_page); ?>">Office</a>
                 <a href="<?php echo URL; ?>location/getLocations" class="dropdown-item <?php echo isActive('location/getLocations', $current_page); ?>">Location</a>
             </div>

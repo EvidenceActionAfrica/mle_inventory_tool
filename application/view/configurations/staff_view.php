@@ -48,22 +48,27 @@
                         <?php foreach ($users as $user): ?>
                             <tr>
                                 <td><?= htmlspecialchars($user->email) ?></td>
-                                <td><?= htmlspecialchars($user->department) ?></td>
-                                <td><?= htmlspecialchars($user->position) ?></td>
+                                <td><?= htmlspecialchars($user->department_name) ?></td>
+                                <td><?= htmlspecialchars($user->position_name) ?></td>
                                 <td><?= htmlspecialchars($user->role) ?></td>
                                 <td>
                                     <!-- Edit Button -->
                                     <button class="btn btn-warning btn-sm" 
-                                            onclick="editUser('<?php echo $user->id; ?>', '<?php echo $user->email; ?>', '<?php echo $user->department; ?>', '<?php echo $user->position; ?>', '<?php echo $user->role; ?>')">
+                                        onclick="editUser('<?php echo $user->id; ?>', 
+                                                        '<?php echo $user->email; ?>', 
+                                                        '<?php echo $user->department; ?>', 
+                                                        '<?php echo $user->position; ?>', 
+                                                        '<?php echo $user->role; ?>')">
                                         Edit
                                     </button>
+
+
                                     <!-- Delete Button -->
                                     <a href="<?= URL ?>users/delete?delete=<?= $user->id ?>" 
                                     class="btn btn-danger btn-sm" 
                                     onclick="return confirm('Are you sure you want to delete this user?');">
                                     Delete
                                     </a>
-
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -88,15 +93,30 @@
                     </div>
                     <div class="mb-3">
                         <label>Department:</label>
-                        <input type="text" name="department" class="form-control">
+                        <select name="department" class="form-control">
+                            <option value="">Select Department</option>
+                            <?php foreach ($departments as $dept): ?>
+                                <option value="<?= $dept->id ?>"><?= htmlspecialchars($dept->department_name) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label>Position:</label>
-                        <input type="text" name="position" class="form-control">
+                        <select name="position" class="form-control">
+                            <option value="">Select Position</option>
+                            <?php foreach ($positions as $pos): ?>
+                                <option value="<?= $pos->id ?>"><?= htmlspecialchars($pos->position_name) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label>Role:</label>
-                        <input type="text" name="role" class="form-control" required>
+                        <select name="role" class="form-control">
+                            <option value="">Select Role</option>
+                            <?php foreach ($roles as $role): ?>
+                                <option value="<?= $role ?>"><?= ucfirst($role) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Add User</button>
                 </form>
@@ -121,15 +141,30 @@
                         </div>
                         <div class="mb-3">
                             <label>Department:</label>
-                            <input type="text" name="department" id="edit_department" class="form-control">
+                            <select name="department" id="edit_department" class="form-control">
+                                <option value="">Select Department</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?= $dept->id ?>"><?= htmlspecialchars($dept->department_name) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label>Position:</label>
-                            <input type="text" name="position" id="edit_position" class="form-control">
+                            <select name="position" id="edit_position" class="form-control">
+                                <option value="">Select Position</option>
+                                <?php foreach ($positions as $pos): ?>
+                                    <option value="<?= $pos->id ?>"><?= htmlspecialchars($pos->position_name) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label>Role:</label>
-                            <input type="text" name="role" id="edit_role" class="form-control" required>
+                            <select name="role" id="edit_role" class="form-control">
+                                <option value="">Select Role</option>
+                                <?php foreach ($roles as $role): ?>
+                                    <option value="<?= $role ?>"><?= ucfirst($role) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -146,12 +181,33 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-function editUser(id, email, department, position, role) {
+function editUser(id, email, departmentId, positionId, role) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_email').value = email;
-    document.getElementById('edit_department').value = department;
-    document.getElementById('edit_position').value = position;
-    document.getElementById('edit_role').value = role;
+
+    let deptDropdown = document.getElementById('edit_department');
+    let posDropdown = document.getElementById('edit_position');
+    let roleDropdown = document.getElementById('edit_role');
+
+    // Ensure department and position are set correctly
+    if (departmentId) {
+        deptDropdown.value = departmentId;
+    } else {
+        deptDropdown.selectedIndex = 0;
+    }
+
+    if (positionId) {
+        posDropdown.value = positionId;
+    } else {
+        posDropdown.selectedIndex = 0;
+    }
+
+    if (role) {
+        roleDropdown.value = role;
+    } else {
+        roleDropdown.selectedIndex = 0;
+    }
+
     var myModal = new bootstrap.Modal(document.getElementById('editModal'));
     myModal.show();
 }

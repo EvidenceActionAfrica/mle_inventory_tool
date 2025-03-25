@@ -201,28 +201,28 @@ class InventoryAssignment extends Controller
 
     //report
     //managers reports of assigned items
-    public function managerAssignments() {
-        session_start();
+    public function staffassignments()
+{
+    session_start();
 
     if (!isset($_SESSION['user_email'])) {
         header("Location: " . URL . "login");
         exit();
     }
+
     if ($this->model === null) {
         echo "Model not loaded properly!";
         exit();
     }
 
-    $email = $_SESSION['user_email'];
-    $username = explode('@', $email)[0];
-    
-    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-    $assignments = $this->model->getAllAssignmentsByManager($username);
+    $loggedInEmail = $_SESSION['user_email'];
+    $assignments = $this->model->getAssignmentsByHierarchy($loggedInEmail);
 
-    require APP . 'view/_templates/header.php';
     require APP . 'view/_templates/sessions.php';
-    require APP . 'view/inventory_assignments/user_assignments.php';
-    }
+    require APP . 'view/_templates/header.php';
+    require APP . 'view/inventory_assignments/assignments_hierarchy.php';
+}
+
     
 }
 

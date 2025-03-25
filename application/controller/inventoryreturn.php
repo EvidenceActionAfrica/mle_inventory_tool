@@ -426,7 +426,7 @@ class inventoryreturn extends Controller
     
     //managers reports
     //returned items for staff
-    public function returnedItems()
+    public function staffreturneditems()
     {
         session_start();
 
@@ -440,14 +440,16 @@ class inventoryreturn extends Controller
             exit();
         }
 
-        $manager_username = strtok($_SESSION['user_email'], '@'); 
+        $loggedInEmail = $_SESSION['user_email'];
         $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-        $returnedItems = $this->model->getReturnedItemsByManager($manager_username, $search);
+        $returnedItems = $this->model->getReturnedItemsByHierarchy($loggedInEmail, $search);
+
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
-        require APP . 'view/inventoryreturns/users_returned_items.php';
+        require APP . 'view/inventoryreturns/returned_items_hierarchy.php';
     }
+
 
 }
 

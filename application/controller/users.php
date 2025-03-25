@@ -15,7 +15,10 @@ class Users extends Controller
                 header("Location: " . URL . "login");
                 exit();
             }
-        $users = $this->model->get_users();
+            $users = $this->model->get_users();
+            $departments = $this->model->get_departments();
+            $positions = $this->model->get_positions();
+            $roles = $this->model->get_roles();
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/configurations/staff_view.php';
@@ -36,12 +39,12 @@ class Users extends Controller
         }
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $email = trim($_POST['email']);
-            $department = !empty($_POST['department']) ? trim($_POST['department']) : null;
-            $position = !empty($_POST['position']) ? trim($_POST['position']) : null;
+            $department = !empty($_POST['department']) ? intval($_POST['department']) : null;
+            $position = !empty($_POST['position']) ? intval($_POST['position']) : null;
             $role = trim($_POST['role']);
-            
+
             $this->model->insert_user($email, $department, $position, $role);
-            
+
             header("Location: " . URL . "users/getUsers?success=User Added Successfully!");
             exit();
         }
@@ -63,12 +66,12 @@ class Users extends Controller
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = intval($_POST['id']);
             $email = trim($_POST['email']);
-            $department = !empty($_POST['department']) ? trim($_POST['department']) : null;
-            $position = !empty($_POST['position']) ? trim($_POST['position']) : null;
+            $department = !empty($_POST['department']) ? intval($_POST['department']) : null;
+            $position = !empty($_POST['position']) ? intval($_POST['position']) : null;
             $role = trim($_POST['role']);
 
             $this->model->edit_user($id, $email, $department, $position, $role);
-            
+
             header("Location: " . URL . "users/getUsers?success=User Updated Successfully!");
             exit();
         }

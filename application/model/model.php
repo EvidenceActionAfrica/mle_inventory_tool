@@ -28,8 +28,6 @@ class Model
         return $query->fetch(PDO::FETCH_OBJ);  
     }
     
-    
-
     public function reset_password($email, $hashed_password,){
         $sql = "UPDATE staff_login SET password = :password WHERE email = :email";
         $query = $this->db->prepare($sql);
@@ -40,45 +38,80 @@ class Model
     // user management function
     public function get_users()
     {
-        $stmt = $this->db->prepare("SELECT * FROM staff_login");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_OBJ);  
+        $sql = "SELECT staff_login.*, 
+                       departments.department_name, 
+                       positions.position_name 
+                FROM staff_login 
+                LEFT JOIN departments ON staff_login.department = departments.id
+                LEFT JOIN positions ON staff_login.position = positions.id";
+        
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        
+        return $query->fetchAll(PDO::FETCH_OBJ);
     }
-
-    public function insert_user($email, $department, $position, $role, $password = 'mle2025'){
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
+    public function insert_user($email, $department, $position, $role, $password = 'mle2025')
+    {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
         $sql = "INSERT INTO staff_login (email, department, position, role, password) 
                 VALUES (:email, :department, :position, :role, :password)";
         $query = $this->db->prepare($sql);
         $query->bindValue(':email', $email, PDO::PARAM_STR);
-        $query->bindValue(':department', $department ?: null, $department ? PDO::PARAM_STR : PDO::PARAM_NULL);
-        $query->bindValue(':position', $position ?: null, $position ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $query->bindValue(':department', $department ?: null, PDO::PARAM_INT);
+        $query->bindValue(':position', $position ?: null, PDO::PARAM_INT);
         $query->bindValue(':role', $role, PDO::PARAM_STR);
         $query->bindValue(':password', $hashed_password, PDO::PARAM_STR);
-    
+
         return $query->execute();
     }
     
+    public function edit_user($id, $email, $department, $position, $role)
+    {
+        $sql = "UPDATE staff_login 
+                SET email=:email, department=:department, position=:position, role=:role 
+                WHERE id=:id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(
+            ':email' => $email,
+            ':department' => $department,
+            ':position' => $position,
+            ':role' => $role,
+            ':id' => $id
+        );
 
-    public function edit_user($id, $email,$department, $position, $role){
-        
-        $sql = "UPDATE staff_login SET email=:email, department=:department, position=:position,  role=:role where id=:id";
-        $query = $this->db->prepare($sql);
-        $parameters = array(':department' => $department,':position' => $position,':email' => $email,':role' => $role, ':id'=>$id); 
-        //echo '[ PDO DEBUG ]: ' . Helper::debugPDO($sql, $parameters); 
-       
-        return  $query->execute($parameters);
+        return $query->execute($parameters);
     }
-     
-    public function delete_user($id){
-        
-        $sql = "DELETE FROM staff_login where id=:id";
+         
+    public function delete_user($id)
+    {
+        $sql = "DELETE FROM staff_login WHERE id=:id";
         $query = $this->db->prepare($sql);
-        $parameters = array(':id'=>$id); 
-        //echo '[ PDO DEBUG ]: ' . Helper::debugPDO($sql, $parameters); 
-       
-        return  $query->execute($parameters);
+        $parameters = array(':id' => $id);
+
+        return $query->execute($parameters);
+    }
+    // Fetch departments
+    public function get_departments()
+    {
+        $stmt = $this->db->prepare("SELECT id, department_name FROM departments");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    // Fetch positions
+    public function get_positions()
+    {
+        $stmt = $this->db->prepare("SELECT id, position_name FROM positions");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    // Fetch roles
+    public function get_roles()
+    {
+        return ['super_admin', 'admin', 'staff']; // Static ENUM values
     }
 
 
@@ -318,30 +351,35 @@ class Model
     // Fetch all assignments
     public function getAllAssignments() {
         $sql = "SELECT 
-                    ia.id,
-                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
-                    ia.email,
-                    sl.department,
-                    sl.position,
-                    ia.location,
-                    i.category_id,
-                    i.description,
-                    ia.serial_number,
-                    ia.tag_number,
-                    ia.date_assigned,
-                    ia.managed_by,
-                    ia.acknowledgment_status,
-                    ia.created_at,
-                    ia.updated_at
-                FROM inventory_assignment ia
-                LEFT JOIN inventory i ON ia.item = i.id
-                LEFT JOIN staff_login sl ON ia.email = sl.email";
+                ia.id,
+                CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                       LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
+                ia.email,
+                d.department_name AS department,  
+                p.position_name AS position,    
+                ia.location,
+                i.category_id,
+                i.description,
+                ia.serial_number,
+                ia.tag_number,
+                ia.date_assigned,
+                ia.managed_by,
+                ia.acknowledgment_status,
+                ia.created_at,
+                ia.updated_at
+            FROM inventory_assignment ia
+            LEFT JOIN inventory i ON ia.item = i.id
+            LEFT JOIN staff_login sl ON ia.email = sl.email
+            LEFT JOIN departments d ON sl.department = d.id  
+            LEFT JOIN positions p ON sl.position = p.id
+            LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
+            WHERE ir.assignment_id IS NULL";  
     
         $query = $this->db->prepare($sql);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    
     //searchbutton
     public function searchAssignments($query) {
         $sql = "SELECT 
@@ -677,8 +715,8 @@ class Model
                     ia.id,
                     ia.name AS user_name,
                     ia.email,
-                    sl.department,
-                    sl.position,
+                    d.department_name AS department,  
+                    p.position_name AS position,    
                     ia.location,
                     i.category_id,
                     i.description,
@@ -692,14 +730,17 @@ class Model
                 FROM inventory_assignment ia
                 LEFT JOIN inventory i ON ia.item = i.id
                 LEFT JOIN staff_login sl ON ia.email = sl.email
+                LEFT JOIN departments d ON sl.department = d.id  
+                LEFT JOIN positions p ON sl.position = p.id 
                 WHERE ia.email = :user_email
                 AND ia.acknowledgment_status = 'pending'";
-
+    
         $query = $this->db->prepare($sql);
         $query->execute([':user_email' => $user_email]);
-
+    
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    
         // Acknowledge pending items
         public function acknowledgeAssignment($assignment_id, $user_name)
         {
@@ -723,8 +764,8 @@ class Model
                         ia.id,
                         ia.name AS user_name,
                         ia.email,
-                        sl.department,
-                        sl.position,
+                        d.department_name AS department,  
+                        p.position_name AS position,
                         ia.location,
                         i.category_id,
                         i.description,
@@ -738,6 +779,8 @@ class Model
                     FROM inventory_assignment ia
                     LEFT JOIN inventory i ON ia.item = i.id
                     LEFT JOIN staff_login sl ON ia.email = sl.email
+                    LEFT JOIN departments d ON sl.department = d.id  
+                    LEFT JOIN positions p ON sl.position = p.id 
                     WHERE ia.email = :user_email
                     AND ia.acknowledgment_status = 'acknowledged'
                     -- Exclude items that have been returned and approved
@@ -1075,10 +1118,13 @@ class Model
     {
         $sql = "SELECT 
                     ia.id,
-                    ia.name AS user_name,
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))
+                    ) AS user_name,
                     ia.email AS assigned_user_email,
-                    sl.department,
-                    sl.position,
+                    d.department_name AS department,
+                    p.position_name AS position,
                     ia.location,
                     c.category AS category,
                     i.description,
@@ -1093,6 +1139,8 @@ class Model
                 LEFT JOIN inventory i ON ia.item = i.id
                 LEFT JOIN categories c ON i.category_id = c.id  
                 LEFT JOIN staff_login sl ON ia.email = sl.email
+                LEFT JOIN departments d ON sl.department = d.id
+                LEFT JOIN positions p ON sl.position = p.id
                 WHERE ia.acknowledgment_status = 'acknowledged'
                 AND NOT EXISTS (
                     -- Exclude items that are returned as approved (functional, lost, damaged)
@@ -1109,6 +1157,7 @@ class Model
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    
     //search in inuse page
     public function getAssignedItemsSearch($search)
     {
@@ -1340,16 +1389,141 @@ class Model
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
-    //managers reports
-    //assigned items report
-    public function getAllAssignmentsByManager($manager_username, $search = '') {
+
+    //positions model
+    // Fetch all positions ordered by hierarchy level
+    public function getPositions()
+    {
+        $sql = "SELECT * FROM positions ORDER BY hierarchy_level ASC";
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Add a new position
+    public function addPosition($position_name, $hierarchy_level)
+    {
+        $sql = "INSERT INTO positions (position_name, hierarchy_level) VALUES (:position_name, :hierarchy_level)";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':position_name' => $position_name, ':hierarchy_level' => $hierarchy_level);
+        return $query->execute($parameters);
+    }
+
+    // Get a single position by ID
+    public function getPositionById($id)
+    {
+        $sql = "SELECT * FROM positions WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':id' => $id);
+        $query->execute($parameters);
+        return $query->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Update an existing position
+    public function updatePosition($id, $position_name, $hierarchy_level)
+    {
+        $sql = "UPDATE positions SET position_name = :position_name, hierarchy_level = :hierarchy_level WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':position_name' => $position_name, ':hierarchy_level' => $hierarchy_level, ':id' => $id);
+        return $query->execute($parameters);
+    }
+
+    // Delete a position
+    public function deletePosition($id)
+    {
+        $sql = "DELETE FROM positions WHERE id = :id";
+        $query = $this->db->prepare($sql);
+        $parameters = array(':id' => $id);
+        return $query->execute($parameters);
+    }
+    
+    //department model
+    // Fetch all departments
+    public function getAllDepartments() {
+        return $this->db->query("SELECT * FROM departments ORDER BY created_at DESC")->fetchAll();
+    }
+
+    // Get department by ID
+    public function getDepartmentById($id) {
+        $stmt = $this->db->prepare("SELECT * FROM departments WHERE id = :id");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->fetch();
+    }
+
+    // Add new department
+    public function addDepartment($department_name) {
+        $stmt = $this->db->prepare("INSERT INTO departments (department_name) VALUES (:department_name)");
+        $stmt->bindParam(':department_name', $department_name);
+        return $stmt->execute();
+    }
+
+    // Update department
+    public function updateDepartment($id, $department_name) {
+        $stmt = $this->db->prepare("UPDATE departments SET department_name = :department_name WHERE id = :id");
+        $stmt->bindParam(':department_name', $department_name, PDO::PARAM_STR);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    
+        if (!$stmt->execute()) {
+            print_r($stmt->errorInfo()); // Debugging: Show SQL error if update fails
+            return false;
+        }
+        return true;
+    }
+    
+
+    // Delete department
+    public function deleteDepartment($id) {
+        $stmt = $this->db->prepare("DELETE FROM departments WHERE id = :id");
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+     //managers reports
+    //hierachy access of assignments
+    public function getAssignmentsByHierarchy($loggedInEmail)
+    {
+        $sql = "SELECT p.hierarchy_level, sl.department 
+                FROM staff_login sl
+                LEFT JOIN positions p ON sl.position = p.id
+                WHERE sl.email = :email";
+    
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':email', $loggedInEmail, PDO::PARAM_STR);
+        $query->execute();
+        $user = $query->fetch(PDO::FETCH_OBJ);
+    
+        if (!$user) {
+            return []; 
+        }
+    
+        $userLevel = (int) $user->hierarchy_level;
+        $userDepartment = (int) $user->department;
+    
+        $allowedLevels = [];
+        switch ($userLevel) {
+            case 1: 
+                $allowedLevels = [1, 2, 3, 4, 5]; 
+                break;
+            case 2: 
+                $allowedLevels = [3, 4, 5]; 
+                break;
+            case 3: 
+                $allowedLevels = [4, 5]; 
+                break;
+            case 4: 
+            case 5: 
+                return []; 
+            default:
+                return []; 
+        }
+    
         $sql = "SELECT 
                     ia.id,
                     CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
                            LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
                     ia.email,
-                    sl.department,
-                    sl.position,
+                    d.department_name AS department,  
+                    p.position_name AS position,    
                     ia.location,
                     i.category_id,
                     i.description,
@@ -1363,48 +1537,70 @@ class Model
                 FROM inventory_assignment ia
                 LEFT JOIN inventory i ON ia.item = i.id
                 LEFT JOIN staff_login sl ON ia.email = sl.email
-                WHERE ia.managed_by = :manager_username";
-    
-        // If there's a search term, add a filter
-        if (!empty($search)) {
-            $sql .= " AND (
-                        i.description LIKE :search 
-                        OR ia.serial_number LIKE :search 
-                        OR ia.tag_number LIKE :search
-                        OR ia.acknowledgment_status LIKE :search
-                        OR CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                                  LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) LIKE :search
-                    )";
-        }
+                LEFT JOIN departments d ON sl.department = d.id  
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
+                WHERE p.hierarchy_level IN (" . implode(',', $allowedLevels) . ") 
+                AND sl.department = :department
+                AND ir.assignment_id IS NULL";
     
         $query = $this->db->prepare($sql);
-        $query->bindParam(':manager_username', $manager_username, PDO::PARAM_STR);
-    
-        if (!empty($search)) {
-            $searchTerm = "%$search%"; 
-            $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
-        }
-    
+        $query->bindParam(':department', $userDepartment, PDO::PARAM_INT);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    //returned items report
-    public function getReturnedItemsByManager($manager_username, $search = '')
+    //hierachy access of returned items
+    public function getReturnedItemsByHierarchy($loggedInEmail, $search = '')
     {
         try {
+            $sql = "SELECT p.hierarchy_level, sl.department 
+                    FROM staff_login sl
+                    LEFT JOIN positions p ON sl.position = p.id
+                    WHERE sl.email = :email";
+    
+            $query = $this->db->prepare($sql);
+            $query->bindParam(':email', $loggedInEmail, PDO::PARAM_STR);
+            $query->execute();
+            $user = $query->fetch(PDO::FETCH_OBJ);
+    
+            if (!$user) {
+                return []; 
+            }
+    
+            $userLevel = (int) $user->hierarchy_level;
+            $userDepartment = (int) $user->department;
+    
+
+            $allowedLevels = [];
+            switch ($userLevel) {
+                case 1: 
+                    $allowedLevels = [2, 3, 4, 5];
+                    break;
+                case 2: 
+                    $allowedLevels = [3, 4, 5];
+                    break;
+                case 3: 
+                    $allowedLevels = [4, 5];
+                    break;
+                default:
+                    return []; 
+            }
+
             $sql = "SELECT ir.id, i.description, i.serial_number, 
-                        SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
-                        ir.return_date, ir.status, 
-                        SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
+                            SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
+                            ir.return_date, ir.status, 
+                            SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
                     FROM inventory_returned ir
                     INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
                     INNER JOIN inventory i ON ia.item = i.id  
                     INNER JOIN staff_login sl ON ir.returned_by = sl.email
                     INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
-                    WHERE ia.managed_by = :manager_username";
-
-            // Apply search filter if provided
+                    INNER JOIN positions p ON sl.position = p.id
+                    WHERE p.hierarchy_level IN (" . implode(',', $allowedLevels) . ") 
+                    AND sl.department = :department
+                    AND ir.returned_by != :loggedInEmail"; 
+    
             if (!empty($search)) {
                 $sql .= " AND (
                             i.description LIKE :search 
@@ -1413,22 +1609,22 @@ class Model
                             OR SUBSTRING_INDEX(sl.email, '@', 1) LIKE :search
                         )";
             }
-
+    
             $query = $this->db->prepare($sql);
-            $query->bindParam(':manager_username', $manager_username, PDO::PARAM_STR);
-
+            $query->bindParam(':department', $userDepartment, PDO::PARAM_INT);
+            $query->bindParam(':loggedInEmail', $loggedInEmail, PDO::PARAM_STR); 
+    
             if (!empty($search)) {
-                $searchTerm = "%$search%"; // Wildcard search
+                $searchTerm = "%$search%";
                 $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
             }
-
+    
             $query->execute();
             return $query->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
-
     
     
 
