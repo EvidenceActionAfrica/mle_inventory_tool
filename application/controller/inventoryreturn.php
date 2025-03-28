@@ -450,8 +450,55 @@ class inventoryreturn extends Controller
         require APP . 'view/inventoryreturns/returned_items_hierarchy.php';
     }
 
+    public function downloadReturnedItems()
+    {
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    
+        if ($this->model === null) {
+            $_SESSION['error_message'] = "Model not loaded properly!";
+            header("Location: " . URL . "InventoryReturn/staffreturneditems"); 
+            exit();
+        }
+    
+        $loggedInEmail = $_SESSION['user_email'];
+        $items = $this->model->getReturnedItemsForDownload($loggedInEmail);
+    
+        if (empty($items)) {
+            $_SESSION['error_message'] = "No returned items available for download.";
+            header("Location: " . URL . "InventoryReturn/staffreturneditems"); 
+            exit();
+        }
+    
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="returned_items.csv"');
+    
+        $output = fopen('php://output', 'w');
+    
+        fputcsv($output, ['Description', 'Serial Number', 'Returned By', 'Return Date', 'Status', 'Receiver']);
+    
+        foreach ($items as $item) {
+            fputcsv($output, [
+                $item['description'],
+                $item['serial_number'],
+                $item['returned_by_name'],
+                $item['return_date'],
+                $item['status'],
+                $item['receiver_name']
+            ]);
+        }
+    
+        fclose($output);
+        exit();
+    }
+    
 
-}
+
+} 
 
 
 

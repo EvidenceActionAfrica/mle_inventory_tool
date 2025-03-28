@@ -36,10 +36,11 @@
     <div class="row">
         <!-- Table -->
         <div class="col-md-8 table-container">
-            <table>
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>Department Name</th>
+                        <th>Parent Department</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -48,10 +49,15 @@
                     <?php foreach ($departments as $department): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($department['department_name']); ?></td>
+                            <td><?php echo htmlspecialchars($department['parent_name'] ?? 'None'); ?></td>
                             <td>
                                 <!-- Edit Button -->
                                 <button class="btn btn-warning btn-sm"
-                                    onclick="editDepartment(<?= $department['id'] ?>, '<?= htmlspecialchars($department['department_name'], ENT_QUOTES) ?>')">
+                                    onclick="editDepartment(
+                                        <?= $department['id'] ?>, 
+                                        '<?= htmlspecialchars($department['department_name'], ENT_QUOTES) ?>',
+                                        <?= $department['parent_id'] ?? 'null' ?>
+                                    )">
                                     Edit
                                 </button>
                                 
@@ -66,7 +72,7 @@
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="2">No departments found.</td>
+                        <td colspan="3">No departments found.</td>
                     </tr>
                 <?php endif; ?>
                 </tbody>
@@ -81,6 +87,15 @@
                     <div class="mb-3">
                         <label>Department Name:</label>
                         <input type="text" name="department_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Parent Department:</label>
+                        <select name="parent_id" class="form-control">
+                            <option value="">None</option>
+                            <?php foreach ($departments as $dept): ?>
+                                <option value="<?= $dept['id'] ?>"><?= htmlspecialchars($dept['department_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Add Department</button>
                 </form>
@@ -103,6 +118,15 @@
                             <label>Department Name:</label>
                             <input type="text" name="department_name" id="edit_name" class="form-control" required>
                         </div>
+                        <div class="mb-3">
+                            <label>Parent Department:</label>
+                            <select name="parent_id" id="edit_parent_id" class="form-control">
+                                <option value="">None</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?= $dept['id'] ?>"><?= htmlspecialchars($dept['department_name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" name="update" class="btn btn-primary">Update</button>
@@ -120,9 +144,18 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    window.editDepartment = function (id, name) {
+    window.editDepartment = function (id, name, parentId) {
         document.getElementById('edit_id').value = id;
         document.getElementById('edit_name').value = name;
+        
+        // Set parent department in dropdown
+        const parentDropdown = document.getElementById('edit_parent_id');
+        for (let i = 0; i < parentDropdown.options.length; i++) {
+            if (parentDropdown.options[i].value == parentId) {
+                parentDropdown.options[i].selected = true;
+                break;
+            }
+        }
 
         // Open Bootstrap Modal
         var editModal = new bootstrap.Modal(document.getElementById('editModal'), {

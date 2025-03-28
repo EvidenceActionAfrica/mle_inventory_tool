@@ -806,10 +806,10 @@ class Model
                                ir.return_date, ir.status, 
                                SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
                         FROM inventory_returned ir
-                        INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  -- Correct join
-                        INNER JOIN inventory i ON ia.item = i.id  -- Correct join
+                        INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
+                        INNER JOIN inventory i ON ia.item = i.id 
                         INNER JOIN staff_login sl ON ir.returned_by = sl.email
-                        INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  -- Fix integer match
+                        INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
                         WHERE ir.returned_by = :returned_by";
         
                 $query = $this->db->prepare($sql);
@@ -1443,6 +1443,16 @@ class Model
         return $this->db->query("SELECT * FROM departments ORDER BY created_at DESC")->fetchAll();
     }
 
+    // Fetch departments with parent-child structure
+    public function getDepartmentsHierarchy() {
+        return $this->db->query("
+            SELECT d1.id, d1.department_name, d1.parent_id, d2.department_name AS parent_name
+            FROM departments d1
+            LEFT JOIN departments d2 ON d1.parent_id = d2.id
+            ORDER BY d1.parent_id ASC, d1.department_name ASC
+        ")->fetchAll();
+    }
+
     // Get department by ID
     public function getDepartmentById($id) {
         $stmt = $this->db->prepare("SELECT * FROM departments WHERE id = :id");
@@ -1451,40 +1461,38 @@ class Model
         return $stmt->fetch();
     }
 
-    // Add new department
-    public function addDepartment($department_name) {
-        $stmt = $this->db->prepare("INSERT INTO departments (department_name) VALUES (:department_name)");
+    // Add new department with parent ID
+    public function addDepartment($department_name, $parent_id = NULL) {
+        $stmt = $this->db->prepare("INSERT INTO departments (department_name, parent_id) VALUES (:department_name, :parent_id)");
         $stmt->bindParam(':department_name', $department_name);
+        $stmt->bindParam(':parent_id', $parent_id, PDO::PARAM_NULL | PDO::PARAM_INT);
         return $stmt->execute();
     }
 
-    // Update department
-    public function updateDepartment($id, $department_name) {
-        $stmt = $this->db->prepare("UPDATE departments SET department_name = :department_name WHERE id = :id");
+      // Update department details including parent_id
+    public function updateDepartment($id, $department_name, $parent_id = NULL) 
+    {
+        $stmt = $this->db->prepare("UPDATE departments SET department_name = :department_name, parent_id = :parent_id WHERE id = :id");
         $stmt->bindParam(':department_name', $department_name, PDO::PARAM_STR);
+        $stmt->bindParam(':parent_id', $parent_id, PDO::PARAM_NULL | PDO::PARAM_INT);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-    
-        if (!$stmt->execute()) {
-            print_r($stmt->errorInfo()); // Debugging: Show SQL error if update fails
-            return false;
-        }
-        return true;
+        return $stmt->execute();
     }
-    
 
-    // Delete department
+    // Delete a department
     public function deleteDepartment($id) {
         $stmt = $this->db->prepare("DELETE FROM departments WHERE id = :id");
-        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
      //managers reports
     //hierachy access of assignments
     public function getAssignmentsByHierarchy($loggedInEmail)
     {
-        $sql = "SELECT p.hierarchy_level, sl.department 
+        $sql = "SELECT p.hierarchy_level AS position_level, d.id AS department_id
                 FROM staff_login sl
                 LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN departments d ON sl.department = d.id
                 WHERE sl.email = :email";
     
         $query = $this->db->prepare($sql);
@@ -1493,35 +1501,39 @@ class Model
         $user = $query->fetch(PDO::FETCH_OBJ);
     
         if (!$user) {
-            return []; 
+            return [];
         }
     
-        $userLevel = (int) $user->hierarchy_level;
-        $userDepartment = (int) $user->department;
+        $userLevel = (int) $user->position_level;
+        $userDepartment = (int) $user->department_id;
+    
+        $subDepartments = $this->getSubDepartments($userDepartment);
+        $subDepartments[] = $userDepartment;  
     
         $allowedLevels = [];
         switch ($userLevel) {
-            case 1: 
-                $allowedLevels = [1, 2, 3, 4, 5]; 
+            case 1:  
+                $allowedLevels = [1, 2, 3, 4, 5, 6];
                 break;
-            case 2: 
-                $allowedLevels = [3, 4, 5]; 
+            case 2:  
+                $allowedLevels = [3, 4, 5, 6];
                 break;
-            case 3: 
-                $allowedLevels = [4, 5]; 
+            case 3:  
+                $allowedLevels = [4, 5, 6];
                 break;
-            case 4: 
-            case 5: 
-                return []; 
+            case 4:  
+                $allowedLevels = [5, 6];
+                break;
             default:
-                return []; 
+                return [];
         }
     
+        // Fetch assignments for staff within the department hierarchy
         $sql = "SELECT 
                     ia.id,
-                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
-                    ia.email,
+                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(sl.email, '@', 1), 1)), 
+                           LCASE(SUBSTRING(SUBSTRING_INDEX(sl.email, '@', 1), 2))) AS user_name, 
+                    sl.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
                     ia.location,
@@ -1540,20 +1552,38 @@ class Model
                 LEFT JOIN departments d ON sl.department = d.id  
                 LEFT JOIN positions p ON sl.position = p.id
                 LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
-                WHERE p.hierarchy_level IN (" . implode(',', $allowedLevels) . ") 
-                AND sl.department = :department
+                WHERE sl.department IN (" . implode(',', array_fill(0, count($subDepartments), '?')) . ")  
+                AND p.hierarchy_level IN (" . implode(',', $allowedLevels) . ")  
                 AND ir.assignment_id IS NULL";
     
         $query = $this->db->prepare($sql);
-        $query->bindParam(':department', $userDepartment, PDO::PARAM_INT);
+        foreach ($subDepartments as $index => $deptId) {
+            $query->bindValue($index + 1, $deptId, PDO::PARAM_INT);
+        }
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    private function getSubDepartments($departmentId)
+    {
+        $sql = "WITH RECURSIVE sub_departments AS (
+                    SELECT id FROM departments WHERE parent_id = :departmentId
+                    UNION ALL
+                    SELECT d.id FROM departments d
+                    INNER JOIN sub_departments sd ON d.parent_id = sd.id
+                ) 
+                SELECT id FROM sub_departments";
+
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':departmentId', $departmentId, PDO::PARAM_INT);
+        $query->execute();
+        return array_column($query->fetchAll(PDO::FETCH_ASSOC), 'id');
     }
     
     //hierachy access of returned items
     public function getReturnedItemsByHierarchy($loggedInEmail, $search = '')
     {
         try {
+
             $sql = "SELECT p.hierarchy_level, sl.department 
                     FROM staff_login sl
                     LEFT JOIN positions p ON sl.position = p.id
@@ -1571,22 +1601,18 @@ class Model
             $userLevel = (int) $user->hierarchy_level;
             $userDepartment = (int) $user->department;
     
+            $subDepartments = $this->getSubDepartments($userDepartment);
+            $subDepartments[] = $userDepartment;
 
             $allowedLevels = [];
             switch ($userLevel) {
-                case 1: 
-                    $allowedLevels = [2, 3, 4, 5];
-                    break;
-                case 2: 
-                    $allowedLevels = [3, 4, 5];
-                    break;
-                case 3: 
-                    $allowedLevels = [4, 5];
-                    break;
-                default:
-                    return []; 
+                case 1: $allowedLevels = [2, 3, 4, 5]; break;
+                case 2: $allowedLevels = [3, 4, 5]; break;
+                case 3: $allowedLevels = [4, 5]; break;
+                default: return []; 
             }
 
+            $placeholders = implode(',', array_fill(0, count($subDepartments), '?'));
             $sql = "SELECT ir.id, i.description, i.serial_number, 
                             SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
                             ir.return_date, ir.status, 
@@ -1598,36 +1624,170 @@ class Model
                     INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
                     INNER JOIN positions p ON sl.position = p.id
                     WHERE p.hierarchy_level IN (" . implode(',', $allowedLevels) . ") 
-                    AND sl.department = :department
-                    AND ir.returned_by != :loggedInEmail"; 
+                    AND sl.department IN ($placeholders)
+                    AND ir.returned_by != ?"; 
     
+
             if (!empty($search)) {
                 $sql .= " AND (
-                            i.description LIKE :search 
-                            OR i.serial_number LIKE :search 
-                            OR ir.status LIKE :search
-                            OR SUBSTRING_INDEX(sl.email, '@', 1) LIKE :search
+                            i.description LIKE ? 
+                            OR i.serial_number LIKE ? 
+                            OR ir.status LIKE ?
+                            OR SUBSTRING_INDEX(sl.email, '@', 1) LIKE ?
                         )";
             }
     
             $query = $this->db->prepare($sql);
-            $query->bindParam(':department', $userDepartment, PDO::PARAM_INT);
-            $query->bindParam(':loggedInEmail', $loggedInEmail, PDO::PARAM_STR); 
+    
+            $params = array_merge($subDepartments, [$loggedInEmail]);
     
             if (!empty($search)) {
                 $searchTerm = "%$search%";
-                $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+                $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
             }
     
-            $query->execute();
+            $query->execute($params);
             return $query->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
     
+    // downloading managers reports
+    public function getAssignmentsForDownload($loggedInEmail)
+    {
+        $sql = "SELECT p.hierarchy_level AS position_level, d.id AS department_id
+                FROM staff_login sl
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN departments d ON sl.department = d.id
+                WHERE sl.email = :email";
+    
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':email', $loggedInEmail, PDO::PARAM_STR);
+        $query->execute();
+        $user = $query->fetch(PDO::FETCH_OBJ);
+    
+        if (!$user) {
+            return [];
+        }
+    
+        $userLevel = (int) $user->position_level;
+        $userDepartment = (int) $user->department_id;
+    
+        $subDepartments = $this->getSubDepartments($userDepartment);
+        $subDepartments[] = $userDepartment;  
+    
+        $allowedLevels = [];
+        switch ($userLevel) {
+            case 1:  
+                $allowedLevels = [1, 2, 3, 4, 5, 6];
+                break;
+            case 2:  
+                $allowedLevels = [3, 4, 5, 6];
+                break;
+            case 3:  
+                $allowedLevels = [4, 5, 6];
+                break;
+            case 4:  
+                $allowedLevels = [5, 6];
+                break;
+            default:
+                return [];
+        }
+    
+        $sql = "SELECT 
+                    ia.id,
+                    sl.email AS user_email,
+                    d.department_name AS department,  
+                    p.position_name AS position,    
+                    ia.location,
+                    i.category_id,
+                    i.description,
+                    ia.serial_number,
+                    ia.tag_number,
+                    ia.date_assigned,
+                    ia.managed_by,
+                    ia.acknowledgment_status,
+                    ia.created_at
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN staff_login sl ON ia.email = sl.email
+                LEFT JOIN departments d ON sl.department = d.id  
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
+                WHERE sl.department IN (" . implode(',', array_fill(0, count($subDepartments), '?')) . ")  
+                AND p.hierarchy_level IN (" . implode(',', $allowedLevels) . ")  
+                AND ir.assignment_id IS NULL";
+    
+        $query = $this->db->prepare($sql);
+        foreach ($subDepartments as $index => $deptId) {
+            $query->bindValue($index + 1, $deptId, PDO::PARAM_INT);
+        }
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    public function getReturnedItemsForDownload($loggedInEmail)
+    {
+        try {
+
+            $sql = "SELECT p.hierarchy_level, sl.department AS department_id
+                    FROM staff_login sl
+                    LEFT JOIN positions p ON sl.position = p.id
+                    WHERE sl.email = ?";
+    
+            $query = $this->db->prepare($sql);
+            $query->execute([$loggedInEmail]);
+            $user = $query->fetch(PDO::FETCH_OBJ);
+    
+            if (!$user) {
+                return [];
+            }
+    
+            $userLevel = (int) $user->hierarchy_level;
+            $userDepartment = (int) $user->department_id;
+
+            $subDepartments = $this->getSubDepartments($userDepartment);
+            $subDepartments[] = $userDepartment;
+
+            $allowedLevels = [];
+            switch ($userLevel) {
+                case 1: $allowedLevels = [1, 2, 3, 4, 5, 6]; break;
+                case 2: $allowedLevels = [3, 4, 5, 6]; break;
+                case 3: $allowedLevels = [4, 5, 6]; break;
+                case 4: $allowedLevels = [5, 6]; break;
+                default: return [];
+            }
     
 
+            $placeholders = implode(',', array_fill(0, count($subDepartments), '?'));
+            $sql = "SELECT ir.id, i.description, i.serial_number, 
+                            SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
+                            ir.return_date, ir.status, 
+                            SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
+                    FROM inventory_returned ir
+                    INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
+                    INNER JOIN inventory i ON ia.item = i.id  
+                    INNER JOIN staff_login sl ON ir.returned_by = sl.email
+                    INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
+                    INNER JOIN positions p ON sl.position = p.id
+                    WHERE sl.department IN ($placeholders)  
+                    AND p.hierarchy_level IN (" . implode(',', $allowedLevels) . ")  
+                    AND ir.returned_by != ?";
+    
+
+            $query = $this->db->prepare($sql);
+            $params = array_merge($subDepartments, [$loggedInEmail]);
+            $query->execute($params);
+    
+            return $query->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
+        }
+    }
+    
+
+    
+    
 }
 
 

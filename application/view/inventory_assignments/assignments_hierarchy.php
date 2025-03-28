@@ -1,3 +1,14 @@
+<?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (isset($_SESSION['error_message'])) {
+    echo "<div class='alert alert-danger'>" . $_SESSION['error_message'] . "</div>";
+    unset($_SESSION['error_message']); // Clear the message after displaying
+}
+?>
+
 <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
 
 <h2>Users Assigned Assignments</h2>
@@ -21,7 +32,15 @@
             <a href="<?= URL ?>InventoryAssignment/managerAssignments" class="reset-search" aria-label="Reset search">Reset</a>
         <?php endif; ?>
     </form>
-
+    
+    <div class="col-md-4 text-end">
+            <a href="<?= URL; ?>InventoryAssignment/downloadAssignments" 
+            class="add-btn" 
+            style="background-color: #05545a; border-color: #05545a;">
+            Download
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Assignments Table -->

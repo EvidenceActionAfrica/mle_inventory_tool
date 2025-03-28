@@ -1,10 +1,9 @@
 <?php
 
-class Department extends Controller
-{
+class Department extends Controller {
+    
     // Fetch and display all departments
-    public function getDepartments()
-    {
+    public function getDepartments() {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -16,8 +15,8 @@ class Department extends Controller
             exit();
         }
 
-        // Retrieve all departments
-        $departments = $this->model->getAllDepartments();
+        // Retrieve departments with hierarchy
+        $departments = $this->model->getDepartmentsHierarchy();
 
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
@@ -25,8 +24,7 @@ class Department extends Controller
     }
 
     // Add a new department
-    public function add()
-    {
+    public function add() {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -40,14 +38,16 @@ class Department extends Controller
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $department_name = trim($_POST['department_name']);
-            $this->model->addDepartment($department_name);
+            $parent_id = !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : NULL;
+
+            $this->model->addDepartment($department_name, $parent_id);
             header("Location: " . URL . "department/getDepartments?success=Department Added Successfully!");
             exit();
         }
     }
 
-    public function edit()
-    {
+    // Edit department
+    public function edit() {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -66,8 +66,9 @@ class Department extends Controller
     
             $id = intval($_POST['id']);
             $department_name = trim($_POST['department_name']);
+            $parent_id = !empty($_POST['parent_id']) ? intval($_POST['parent_id']) : NULL;
     
-            $result = $this->model->updateDepartment($id, $department_name);
+            $result = $this->model->updateDepartment($id, $department_name, $parent_id);
     
             if ($result) {
                 header("Location: " . URL . "department/getDepartments?success=Department Updated Successfully!");
@@ -77,11 +78,9 @@ class Department extends Controller
             }
         }
     }
-    
 
     // Delete a department
-    public function delete()
-    {
+    public function delete() {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();

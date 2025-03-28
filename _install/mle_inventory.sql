@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 20, 2025 at 01:43 PM
+-- Generation Time: Mar 28, 2025 at 07:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -43,7 +43,39 @@ INSERT INTO `categories` (`id`, `category`, `description`, `created_at`) VALUES
 (3, 'Mouse', 'Ligo', '2025-03-12 18:34:20'),
 (5, 'Printer', 'Laser Printers', '2025-03-12 18:34:53'),
 (9, 'Laptop', 'Macbook', '2025-03-12 18:45:08'),
-(10, 'Mouse', 'hp', '2025-03-12 18:45:20');
+(10, 'Mouse', 'hp', '2025-03-12 18:45:20'),
+(11, 'Laptop', 'Lenovo', '2025-03-24 10:17:45'),
+(12, 'Laptop', 'hp', '2025-03-24 10:18:04'),
+(13, 'Smart Phone', 'Samsung A33', '2025-03-24 10:18:15');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `departments`
+--
+
+CREATE TABLE `departments` (
+  `id` int(11) NOT NULL,
+  `department_name` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `parent_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `departments`
+--
+
+INSERT INTO `departments` (`id`, `department_name`, `created_at`, `parent_id`) VALUES
+(11, 'MLE - D', '2025-03-26 08:36:02', NULL),
+(12, 'Field Monitoring', '2025-03-26 08:38:24', 11),
+(13, 'Data Analysis & Learning', '2025-03-26 08:39:01', 11),
+(14, 'Quality Analysis & Control', '2025-03-26 08:39:36', 12),
+(15, 'Field Monitoring(field)', '2025-03-26 08:40:27', 12),
+(16, 'Information Systems', '2025-03-26 08:40:41', 13),
+(17, 'Data Analysis', '2025-03-26 08:41:32', 13),
+(18, 'Data Learning', '2025-03-26 08:41:42', 13),
+(19, 'Data Management', '2025-03-26 08:42:11', 13),
+(20, 'EV-AC', '2025-03-26 08:43:54', NULL);
 
 -- --------------------------------------------------------
 
@@ -75,7 +107,11 @@ INSERT INTO `inventory` (`id`, `category_id`, `description`, `serial_number`, `t
 (13, 5, 'Laser Printers', 'qw23wese3', 'ea-1992', '2025-03-05', 456.00, '2025-04-10', '2025-03-17 10:48:18'),
 (14, 5, 'Laser Printers', '234ede4', 'ea-111', '2025-03-14', 123.00, '2025-05-01', '2025-03-17 10:48:39'),
 (15, 1, 'Samsung A52', '1q234', '1q2ws', '2025-03-14', 125.00, '2025-04-30', '2025-03-17 10:49:10'),
-(16, 1, 'Samsung A52', '3ewr4r', '0987uj', '2025-03-17', 90.00, '2025-05-09', '2025-03-17 10:49:34');
+(16, 1, 'Samsung A52', '3ewr4r', '0987uj', '2025-03-17', 90.00, '2025-05-09', '2025-03-17 10:49:34'),
+(17, 13, 'Samsung A33', '432wed', 'ea-199', '2025-03-04', 40.00, '2025-04-26', '2025-03-24 10:18:54'),
+(18, 13, 'Samsung A33', 'u7y6t5', 'ui787', '2025-03-10', 99.00, '2025-05-10', '2025-03-24 10:19:25'),
+(19, 11, 'Lenovo', '9876tg', '7yhhy6', '2025-03-24', 145.00, '2025-06-12', '2025-03-24 10:19:54'),
+(20, 11, 'Lenovo', '54rg5y6t', 'ea-1100', '2025-03-10', 78.00, '2025-05-30', '2025-03-24 10:20:27');
 
 -- --------------------------------------------------------
 
@@ -104,12 +140,18 @@ CREATE TABLE `inventory_assignment` (
 --
 
 INSERT INTO `inventory_assignment` (`id`, `name`, `email`, `role`, `serial_number`, `tag_number`, `managed_by`, `acknowledgment_status`, `created_at`, `updated_at`, `date_assigned`, `item`, `location`) VALUES
-(37, 'admin@test.com', 'admin@test.com', 'IS Manager', '10928', 'tag-002', 'monitor', 'acknowledged', '2025-03-19 15:59:09', '2025-03-19 15:59:14', '2025-03-18', 9, 'Kuria Hub'),
-(38, 'admin@test.com', 'admin@test.com', 'IS Manager', '1q234', '1q2ws', 'monitor', 'acknowledged', '2025-03-19 15:59:09', '2025-03-19 15:59:15', '2025-03-18', 15, 'Kuria Hub'),
-(39, 'admin@test.com', 'admin@test.com', 'IS Manager', 'sn100', 'tag-001', 'monitor', 'acknowledged', '2025-03-20 04:57:19', '2025-03-20 04:57:24', '2025-03-20', 8, 'Amagoro Hub'),
-(40, 'admin@test.com', 'admin@test.com', 'IS Manager', '4t5rfr5', 'tg-003', 'monitor', 'acknowledged', '2025-03-20 05:23:27', '2025-03-20 05:25:22', '2025-03-20', 11, 'Amagoro Hub'),
-(43, 'admin@test.com', 'admin@test.com', 'IS Manager', '10928', 'tag-002', 'rhyttahkogi', 'pending', '2025-03-20 06:38:54', '2025-03-20 06:38:54', '2025-03-11', 9, 'Amagoro Hub'),
-(44, 'staff@test.com', 'staff@test.com', 'MLE Associate IS', '3ewr4r', '0987uj', 'tech', 'acknowledged', '2025-03-20 12:42:30', '2025-03-20 12:42:38', '2025-03-19', 16, 'Kuria Hub');
+(52, 'florence@test.com', 'florence@test.com', '9 4', 'sn100', 'tag-001', 'quality', 'acknowledged', '2025-03-24 07:36:36', '2025-03-24 07:44:17', '2025-03-23', 8, 'Amagoro Hub'),
+(53, 'rama@test.com', 'rama@test.com', '2 3', '4t5rfr5', 'tg-003', 'rhyttahkogi', 'acknowledged', '2025-03-24 09:24:33', '2025-03-24 09:27:04', '2025-03-24', 11, 'Awendo Field Office'),
+(54, 'admin@test.com', 'admin@test.com', '2 4', 'qw23wese3', 'ea-1992', 'rama', 'acknowledged', '2025-03-24 09:25:25', '2025-03-24 09:26:56', '2025-03-10', 13, 'Amagoro Hub'),
+(55, 'sharon@gmail.com', 'sharon@gmail.com', '2 6', '1q234', '1q2ws', 'rama', 'acknowledged', '2025-03-24 09:26:34', '2025-03-24 09:28:15', '2025-03-23', 15, 'Amagoro Hub'),
+(56, 'rama@test.com', 'rama@test.com', '2 3', '4t5rfr5', 'tg-003', 'miss', 'acknowledged', '2025-03-24 09:38:13', '2025-03-24 09:38:21', '2025-03-24', 11, 'Busia Field Office'),
+(57, 'miss@test.com', 'miss@test.com', '2 2', 'qwedfr987', 'ea-1991', 'rhyttahkogi', 'acknowledged', '2025-03-24 09:39:04', '2025-03-24 09:39:12', '2025-03-24', 12, 'Busia Field Office'),
+(58, 'rhyttahkogi@gmail.com', 'rhyttahkogi@gmail.com', '2 1', '4t5rfr5', 'tg-003', 'rhyttahkogi', 'acknowledged', '2025-03-24 10:15:34', '2025-03-24 10:15:46', '2025-03-24', 11, 'Amagoro Hub'),
+(59, 'miss@test.com', 'miss@test.com', '2 2', '10928', 'tag-002', 'rhyttahkogi', 'acknowledged', '2025-03-24 10:29:10', '2025-03-24 10:29:18', '2025-03-24', 9, 'Busia Field Office'),
+(60, 'rama@test.com', 'rama@test.com', '2 3', '234ede4', 'ea-111', 'miss', 'acknowledged', '2025-03-24 10:30:00', '2025-03-24 10:31:48', '2025-03-23', 14, 'Busia Field Office'),
+(61, 'admin@test.com', 'admin@test.com', '2 4', '432wed', 'ea-199', 'rama', 'acknowledged', '2025-03-24 10:35:00', '2025-03-24 10:35:05', '2025-03-24', 17, 'Busia Field Office'),
+(62, 'sharon@gmail.com', 'sharon@gmail.com', '2 6', '3ewr4r', '0987uj', 'rama', 'acknowledged', '2025-03-24 10:35:23', '2025-03-24 10:39:49', '2025-03-24', 16, 'Awendo Field Office'),
+(63, 'quality@test.com', 'quality@test.com', '14 3', '54rg5y6t', 'ea-1100', 'faridah', 'pending', '2025-03-26 09:45:36', '2025-03-26 09:45:36', '2025-03-26', 20, 'Busia Field Office');
 
 -- --------------------------------------------------------
 
@@ -137,10 +179,12 @@ CREATE TABLE `inventory_returned` (
 --
 
 INSERT INTO `inventory_returned` (`id`, `assignment_id`, `return_date`, `receiver_id`, `returned_by`, `status`, `item_state`, `approved_by`, `approved_date`, `repair_status`, `created_at`, `updated_at`) VALUES
-(49, 37, '2025-03-19', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-03-19 19:00:18', 'Repairable', '2025-03-19 15:59:38', '2025-03-19 16:00:25'),
-(50, 38, '2025-03-19', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-03-19 19:00:32', 'Unrepairable', '2025-03-19 15:59:38', '2025-03-19 16:00:37'),
-(52, 39, '2025-03-20', 2, 'admin@test.com', 'approved', 'lost', NULL, '2025-03-20 12:11:00', NULL, '2025-03-20 09:10:47', '2025-03-20 09:11:00'),
-(53, 44, '2025-03-20', 2, 'staff@test.com', 'approved', 'functional', NULL, '2025-03-20 15:42:56', NULL, '2025-03-20 12:42:47', '2025-03-20 12:42:56');
+(61, 53, '2025-03-24', 2, 'rama@test.com', 'approved', 'functional', NULL, '2025-03-24 12:37:30', NULL, '2025-03-24 09:37:06', '2025-03-24 09:37:30'),
+(62, 54, '2025-03-24', 2, 'admin@test.com', 'approved', 'functional', NULL, '2025-03-24 12:56:19', NULL, '2025-03-24 09:53:33', '2025-03-24 09:56:19'),
+(63, 57, '2025-03-24', 2, 'miss@test.com', 'approved', 'functional', NULL, '2025-03-24 12:56:22', NULL, '2025-03-24 09:53:48', '2025-03-24 09:56:22'),
+(64, 56, '2025-03-24', 2, 'rama@test.com', 'approved', 'functional', NULL, '2025-03-24 12:56:25', NULL, '2025-03-24 09:54:54', '2025-03-24 09:56:25'),
+(65, 55, '2025-03-24', 2, 'sharon@gmail.com', 'approved', 'functional', NULL, '2025-03-24 12:56:28', NULL, '2025-03-24 09:55:52', '2025-03-24 09:56:28'),
+(66, 61, '2025-03-26', 2, 'admin@test.com', 'pending', 'functional', NULL, NULL, NULL, '2025-03-26 10:55:56', '2025-03-26 10:55:56');
 
 -- --------------------------------------------------------
 
@@ -192,6 +236,31 @@ INSERT INTO `offices` (`id`, `office_name`, `location_id`, `created_at`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `positions`
+--
+
+CREATE TABLE `positions` (
+  `id` int(11) NOT NULL,
+  `position_name` varchar(255) NOT NULL,
+  `hierarchy_level` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `positions`
+--
+
+INSERT INTO `positions` (`id`, `position_name`, `hierarchy_level`) VALUES
+(1, 'Associate Director', 1),
+(2, 'Manager', 2),
+(3, 'Associate Manager', 3),
+(4, 'Associate', 5),
+(5, 'M&E Field Officer', 6),
+(6, 'Intern', 6),
+(7, 'Senior Associate', 4);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `staff_login`
 --
 
@@ -211,12 +280,17 @@ CREATE TABLE `staff_login` (
 --
 
 INSERT INTO `staff_login` (`id`, `email`, `password`, `role`, `department`, `position`, `created_at`, `updated_at`) VALUES
-(1, 'admin@test.com', '$2y$10$A/rGSd51afa7/5.lakeWP.AIH0noBnLfryKuaUtIZdLYkA0uKw2AS', 'super_admin', 'IS', 'Manager', '2025-03-12 13:13:02', '2025-03-14 09:52:04'),
-(2, 'tech@test.com', '$2y$10$fMqQh24UHICP3P2Hml2lYefr0S/zjhBASBsyMDNDe8H8epVnNAxEW', 'admin', 'IT', 'Senior Manager', '2025-03-12 13:13:02', '2025-03-14 11:40:37'),
-(3, 'quality@test.com', '$2y$10$eYftVMN2IY4MSIsOaEBD4uYFcwhAkeyjIdkDxBE3CuO7IZwwuVeyS', 'admin', 'QA/QC', 'Associate Manager', '2025-03-12 13:13:02', '2025-03-18 11:40:56'),
-(4, 'monitor@test.com', '$2y$10$6n7ACWUT3EH41BYGnrVfGOIV5Wh3y4KARcOfoDkkpklTrU4Qty89u', 'admin', 'MLE', 'Director', '2025-03-12 13:13:02', '2025-03-18 11:41:58'),
-(5, 'staff@test.com', '$2y$10$BpgfrYEf/vQzte42df1VAuL5Tq9syy6uwKrCz0IzhpLhMyzGTlsGq', 'staff', 'MLE', 'Associate IS', '2025-03-12 13:13:02', '2025-03-18 11:42:57'),
-(7, 'rhyttahkogi@gmail.com', '$2y$10$r/H.vLc1QG5XgRdOqZ4VHewhcUjs9Z9NIHPYmBRV7Oz9sKLFM325C', 'staff', 'MLE-D', 'Associate IS', '2025-03-13 11:15:06', '2025-03-13 11:15:06');
+(1, 'admin@test.com', '$2y$10$A/rGSd51afa7/5.lakeWP.AIH0noBnLfryKuaUtIZdLYkA0uKw2AS', 'super_admin', '16', '4', '2025-03-12 13:13:02', '2025-03-26 08:43:24'),
+(2, 'tech@test.com', '$2y$10$fMqQh24UHICP3P2Hml2lYefr0S/zjhBASBsyMDNDe8H8epVnNAxEW', 'admin', '20', '3', '2025-03-12 13:13:02', '2025-03-26 08:44:21'),
+(3, 'quality@test.com', '$2y$10$bjdKnAVWUoPB6iPEe0Y3hOQqChAqYOo4fYKLNMJj.ajfAXT83fouu', 'admin', '14', '3', '2025-03-12 13:13:02', '2025-03-26 08:44:31'),
+(4, 'monitor@test.com', '$2y$10$6n7ACWUT3EH41BYGnrVfGOIV5Wh3y4KARcOfoDkkpklTrU4Qty89u', 'admin', '19', '2', '2025-03-12 13:13:02', '2025-03-26 08:44:44'),
+(7, 'rhyttahkogi@gmail.com', '$2y$10$tvkmbWGv7uU0ogcrHFfy/.S3wuokI7kI0lvXxr6TSwJHkEGsamy6S', 'staff', '11', '1', '2025-03-13 11:15:06', '2025-03-26 08:44:59'),
+(8, 'rama@test.com', '$2y$10$rh5L0k54SEiGp0ZNAr2.yuzkpv6OkSzCINZQKOWmsgOFRgLzfvbR6', 'staff', '16', '3', '2025-03-21 06:05:46', '2025-03-26 08:45:06'),
+(9, 'florence@test.com', '$2y$10$NlO/hUID7aMWiEKdoD5vYef2cnBX1vVsdwYa1c5cJRCI9DiON3IjO', 'staff', '14', '4', '2025-03-21 08:03:56', '2025-03-26 08:45:14'),
+(10, 'john@gmail.com', '$2y$10$XE/YD.iOoFfln2macpFTa.mp6xCcE9V0EZSjURcunM0Xsvu5TvYM.', 'admin', '17', '4', '2025-03-24 07:12:46', '2025-03-26 08:45:25'),
+(11, 'sharon@gmail.com', '$2y$10$kZm2HekGk4U/40Ed.wq7buz9v/VQgUisiwqnG2Hv1qtz36UZKA6wq', 'staff', '16', '6', '2025-03-24 09:26:10', '2025-03-26 08:45:49'),
+(12, 'miss@test.com', '$2y$10$lr/yCTIF.jyUSFGvneqpxepLUUKsuiUDOt1EKKkG6KOY8bWk2t/fS', 'staff', '13', '2', '2025-03-24 09:34:15', '2025-03-26 08:46:08'),
+(13, 'faridah@test.com', '$2y$10$qG8jYkNFzGWt5xKQQhzq7e7EmhxbSXvS4PiZdaDBNOX2rHN8CqL.a', 'staff', '12', '2', '2025-03-26 09:44:24', '2025-03-26 09:44:24');
 
 --
 -- Indexes for dumped tables
@@ -227,6 +301,13 @@ INSERT INTO `staff_login` (`id`, `email`, `password`, `role`, `department`, `pos
 --
 ALTER TABLE `categories`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `departments`
+--
+ALTER TABLE `departments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `department_name` (`department_name`);
 
 --
 -- Indexes for table `inventory`
@@ -267,6 +348,12 @@ ALTER TABLE `offices`
   ADD KEY `location_id` (`location_id`);
 
 --
+-- Indexes for table `positions`
+--
+ALTER TABLE `positions`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `staff_login`
 --
 ALTER TABLE `staff_login`
@@ -281,25 +368,31 @@ ALTER TABLE `staff_login`
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `departments`
+--
+ALTER TABLE `departments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `inventory_assignment`
 --
 ALTER TABLE `inventory_assignment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `inventory_returned`
 --
 ALTER TABLE `inventory_returned`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `locations`
@@ -314,10 +407,16 @@ ALTER TABLE `offices`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT for table `positions`
+--
+ALTER TABLE `positions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
 -- AUTO_INCREMENT for table `staff_login`
 --
 ALTER TABLE `staff_login`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables

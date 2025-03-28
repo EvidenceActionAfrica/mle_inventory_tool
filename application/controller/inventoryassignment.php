@@ -181,7 +181,7 @@ class InventoryAssignment extends Controller
                 header("Location: " . URL . "login");
                 exit();
             }
-
+            
             $user_email = $_SESSION['user_email'];
             $assignment_id = $_POST['assignment_id'] ?? null;
 
@@ -202,28 +202,78 @@ class InventoryAssignment extends Controller
     //report
     //managers reports of assigned items
     public function staffassignments()
-{
-    session_start();
+    {
+        session_start();
+        
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
 
-    if (!isset($_SESSION['user_email'])) {
-        header("Location: " . URL . "login");
-        exit();
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        $loggedInEmail = $_SESSION['user_email'];
+        $assignments = $this->model->getAssignmentsByHierarchy($loggedInEmail);
+
+        require APP . 'view/_templates/sessions.php';
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory_assignments/assignments_hierarchy.php';
     }
 
-    if ($this->model === null) {
-        echo "Model not loaded properly!";
-        exit();
-    }
-
-    $loggedInEmail = $_SESSION['user_email'];
-    $assignments = $this->model->getAssignmentsByHierarchy($loggedInEmail);
-
-    require APP . 'view/_templates/sessions.php';
-    require APP . 'view/_templates/header.php';
-    require APP . 'view/inventory_assignments/assignments_hierarchy.php';
-}
-
+    //download reports
+    public function downloadAssignments()
+    {
+        session_start();
     
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        if ($this->model === null) {
+            $_SESSION['error_message'] = "Model not loaded properly!";
+            header("Location: " . URL . "InventoryAssignment/staffassignments"); // Redirect to staff assignments page
+            exit();
+        }
+    
+        $loggedInEmail = $_SESSION['user_email'];
+        $assignments = $this->model->getAssignmentsForDownload($loggedInEmail);
+    
+        if (empty($assignments)) {
+            $_SESSION['error_message'] = "No data available for download.";
+            header("Location: " . URL . "InventoryAssignment/staffassignments"); // Redirect to staff assignments page
+            exit();
+        }
+    
+        // Define the exact column headers you want
+        $headers = [
+            'user_email', 'department', 'position', 'location',
+            'description', 'serial_number', 'tag_number',
+            'date_assigned', 'managed_by', 'acknowledgment_status'
+        ];
+    
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="assignments.csv"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    
+        $output = fopen('php://output', 'w');
+        fputcsv($output, $headers); // Write column headers
+    
+        foreach ($assignments as $row) {
+            $filteredRow = [];
+            foreach ($headers as $column) {
+                $filteredRow[] = $row[$column] ?? ''; // Ensure columns match headers
+            }
+            fputcsv($output, $filteredRow);
+        }
+    
+        fclose($output);
+        exit();
+    }
+     
 }
 
 ?>
