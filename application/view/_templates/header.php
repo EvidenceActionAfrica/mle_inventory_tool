@@ -131,10 +131,10 @@ function isActive($page, $current_page)
     <div>
         <!-- Main links -->
         <?php if($role === 'admin'|| $role === 'staff' || $role === 'super_admin'): ?>
-        <a href="<?php echo URL; ?>InventoryAssignment/pending" class="nav-option <?php echo isActive('InventoryAssignment/pending', $current_page); ?>">PENDING ASSIGNMENTS</a>
+        <a href="<?php echo URL; ?>inventoryassignment/pending" class="nav-option <?php echo isActive('inventoryassignment/pending', $current_page); ?>">PENDING ASSIGNMENTS</a>
         <?php endif; ?>
         <?php if($role === 'admin'||  $role === 'super_admin'): ?>
-        <a href="<?php echo URL; ?>InventoryAssignment" class="nav-option <?php echo isActive('InventoryAssignment', $current_page); ?>">ASSIGNMENTS</a>
+        <a href="<?php echo URL; ?>inventoryassignment" class="nav-option <?php echo isActive('inventoryassignment', $current_page); ?>">ASSIGNMENTS</a>
         <?php endif; ?>
         <?php if($role === 'admin'|| $role === 'staff' || $role === 'super_admin'): ?>
         <a href="<?php echo URL; ?>inventoryreturn" class="nav-option <?php echo isActive('inventoryreturn', $current_page); ?>">RETURN ITEM</a>
@@ -166,7 +166,7 @@ function isActive($page, $current_page)
         <div class="dropdown">
             <a href="#" class="nav-option dropdown-toggle <?php echo in_array($current_page, $reports_pages) ? 'active' : ''; ?>">REPORTS</a>
             <div class="dropdown-menu">
-                <a href="<?php echo URL; ?>InventoryAssignment/staffassignments" class="dropdown-item <?php echo isActive('managerAssignments', $current_page); ?>">Staff Assignments</a>
+                <a href="<?php echo URL; ?>inventoryassignment/staffassignments" class="dropdown-item <?php echo isActive('managerAssignments', $current_page); ?>">Staff Assignments</a>
                 <a href="<?php echo URL; ?>inventoryreturn/staffreturneditems" class="dropdown-item <?php echo isActive('returnedItems', $current_page); ?>">Staff Returned Items</a>
             </div>
         </div>

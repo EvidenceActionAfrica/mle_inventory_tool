@@ -1,6 +1,6 @@
 <?php
 
-class InventoryAssignment extends Controller
+class inventoryassignment extends Controller
 {
     // Display all assignments
     public function index()
