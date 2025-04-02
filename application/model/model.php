@@ -1440,8 +1440,9 @@ class Model
     //department model
     // Fetch all departments
     public function getAllDepartments() {
-        return $this->db->query("SELECT * FROM departments ORDER BY created_at DESC")->fetchAll();
+        return $this->db->query("SELECT * FROM departments ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
     }
+    
 
     // Fetch departments with parent-child structure
     public function getDepartmentsHierarchy() {
@@ -1450,8 +1451,9 @@ class Model
             FROM departments d1
             LEFT JOIN departments d2 ON d1.parent_id = d2.id
             ORDER BY d1.parent_id ASC, d1.department_name ASC
-        ")->fetchAll();
+        ")->fetchAll(PDO::FETCH_ASSOC);
     }
+    
 
     // Get department by ID
     public function getDepartmentById($id) {
