@@ -1,6 +1,6 @@
 <link href="<?= URL; ?>css/tables.css" rel="stylesheet">
 
-<div class="container mt-5">
+<div>
     <h2>Disposed Items</h2>
     <div class="d-flex justify-content-end align-items-center mb-3">
         <form method="GET" action="<?= URL ?>inventoryreturn/searchDamagedItems" class="search-form" style="width: 33%;">

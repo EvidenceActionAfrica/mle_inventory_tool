@@ -1,40 +1,19 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Categories</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-    <style>
-        .container {
-            margin-top: 80px; /* To accommodate fixed navbar */
-        }
-        .table-container {
-            width: 70%;
-        }
-        .form-container {
-            width: 30%;
-        }
-        .card {
-            padding: 15px;
-        }
-    </style>
-</head>
+<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
 <body>
 
-<div class="container">
-    <h4>Assets Catalogue</h4>
+<div>
+    <h2>Assets Catalogue</h2>
 
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
     <?php endif; ?>
-
+    <div class="top-bar" style="display: flex; justify-content: flex-end; padding: 10px;">
+        <button class="add-btn " onclick="openModal()">Add Category</button>
+    </div>
     <div class="row">
         <!-- Table -->
-        <div class="col-md-8 table-container">
-            <table >
+        <div class="col-md-12">
+            <table>
                 <thead>
                     <tr>
                         <th>Category Name</th>
@@ -50,65 +29,46 @@
                             <td>
                                 <!-- Edit Button -->
                                 <button class="btn btn-warning btn-sm"
-                                        onclick="editCategory(<?= $category['id'] ?>, '<?= htmlspecialchars($category['category']) ?>', '<?= htmlspecialchars($category['description']) ?>')">
+                                        onclick="openModal(<?= $category['id'] ?>, '<?= htmlspecialchars($category['category']) ?>', '<?= htmlspecialchars($category['description']) ?>')">
                                     Edit
                                 </button>
 
                                 <!-- Delete Button -->
                                 <a href="<?= URL; ?>categories/delete?delete=<?= $category['id'] ?>" 
-                                class="btn btn-danger btn-sm" 
-                                onclick="return confirm('Are you sure you want to delete this category?');">
+                                   class="btn btn-danger btn-sm" 
+                                   onclick="return confirm('Are you sure you want to delete this category?');">
                                     Delete
                                 </a>
                             </td>
-
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
-
-        <!-- Form -->
-        <div class="col-md-4 form-container">
-            <div class="card">
-                <h5 class="text-center">Add Item</h5>
-                <form method="POST" action="<?= URL; ?>categories/add">
-                    <div class="mb-3">
-                        <label>Category Name:</label>
-                        <input type="text" name="category_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label>Description:</label>
-                        <input type="text" name="description" class="form-control" required>
-                    </div>
-                    <button type="submit" name="add" class="btn btn-primary w-100">Add Category</button>
-                </form>
-            </div>
-        </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div id="editModal" class="modal fade" tabindex="-1">
+    <!-- Add/Edit Modal -->
+    <div id="categoryModal" class="modal fade" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-            <form method="POST" action="<?= URL; ?>categories/edit">
+                <form id="category-form" method="POST" action="<?= URL; ?>categories/add">
                     <div class="modal-header">
-                        <h5 class="modal-title">Edit Category</h5>
+                        <h5 class="modal-title" id="modal-title">Add Category</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="id" id="edit_id">
+                        <input type="hidden" name="id" id="modal_id">
                         <div class="mb-3">
                             <label>Category Name:</label>
-                            <input type="text" name="category_name" id="edit_category_name" class="form-control" required>
+                            <input type="text" name="category_name" id="modal_category_name" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label>Description:</label>
-                            <input type="text" name="description" id="edit_description" class="form-control" required>
+                            <input type="text" name="description" id="modal_description" class="form-control" required>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" name="update" class="btn btn-primary">Update</button>
+                        <button type="submit" name="submit" class="btn btn-primary" id="modal-submit-button">Add Category</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </form>
@@ -122,12 +82,27 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-function editCategory(id, name, desc) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_category_name').value = name;
-    document.getElementById('edit_description').value = desc;
-    var myModal = new bootstrap.Modal(document.getElementById('editModal'));
-    myModal.show();
+function openModal(id = '', name = '', desc = '') {
+    if (id) {
+        // Edit mode
+        document.getElementById('category-form').action = "<?= URL ?>categories/edit";
+        document.getElementById('modal-title').textContent = "Edit Category";
+        document.getElementById('modal-submit-button').textContent = "Update Category";
+        document.getElementById('modal_id').value = id;
+        document.getElementById('modal_category_name').value = name;
+        document.getElementById('modal_description').value = desc;
+    } else {
+        // Add mode
+        document.getElementById('category-form').action = "<?= URL ?>categories/add";
+        document.getElementById('modal-title').textContent = "Add Category";
+        document.getElementById('modal-submit-button').textContent = "Add Category";
+        document.getElementById('modal_id').value = ''; // Reset hidden ID
+        document.getElementById('modal_category_name').value = ''; // Clear input field
+        document.getElementById('modal_description').value = ''; // Clear input field
+    }
+
+    var modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    modal.show();
 }
 </script>
 

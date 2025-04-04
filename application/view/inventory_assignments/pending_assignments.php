@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="<?php echo URL; ?>css/style.css">
 
 
-<div class="container mt-5">
+<div >
     <h2>Pending Assignments</h2>
 
     <?php if (!empty($_GET['success'])): ?>

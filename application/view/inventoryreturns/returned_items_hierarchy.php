@@ -10,12 +10,11 @@ if (isset($_SESSION['error_message'])) {
 ?>
 
 <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-<div class="container mt-5">
+<div>
     <h2 style="text-decoration: underline;">Staff Returned Items</h2>
     
     <div class="top-bar">
     <!-- Search Form-->
-    <div class="col-md-8">
         <form method="GET" action="<?= URL ?>inventoryreturn/returnedItems" class="d-flex">
             <input type="text" name="search" 
                 class="form-control me-2" 
@@ -30,7 +29,6 @@ if (isset($_SESSION['error_message'])) {
                    aria-label="Reset search">Reset</a>
             <?php endif; ?>
         </form>
-    </div>
 
     <!-- Download Button-->
     <div class="col-md-4 text-end">

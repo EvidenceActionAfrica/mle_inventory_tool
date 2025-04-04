@@ -1,5 +1,5 @@
 <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-    <div class="container mt-2">
+    <div>
         <h2>Lost Items</h2>
 
         <!-- Success/Error Messages -->
@@ -24,8 +24,8 @@
         </div>
 
         <!-- Inventory Table -->
-        <table class="table table-hover table-bordered">
-            <thead class="table-dark">
+        <table >
+            <thead>
                 <tr>
                     <th>Category</th>
                     <th>Description</th>

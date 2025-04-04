@@ -1,6 +1,6 @@
 <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-<div class="container mt-2">
-    <h2 class="mb-3">Items Currently In Use</h2>
+<div>
+    <h2>Items Currently In Use</h2>
     <!-- Top Bar (Search) -->
     <div class="d-flex justify-content-end align-items-center mb-3">
             <form method="GET" action="<?= URL ?>inventoryreturn/searchAssignedItems" class="search-form" style="width: 33%;">
@@ -14,8 +14,8 @@
         </div>
 
     <!-- Items Table -->
-    <table class="table table-hover table-bordered">
-        <thead class="table-dark">
+    <table>
+        <thead>
             <tr>
                 <th>User</th>
                 <th>Email</th>

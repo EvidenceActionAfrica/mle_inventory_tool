@@ -1,6 +1,6 @@
 <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-<div class="container mt-5">
-    <h2 style="text-decoration: underline;">Your Assigned Items</h2>
+<div>
+    <h2>Your Assigned Items</h2>
 
     <table class="styled-table">
         <thead>
@@ -36,9 +36,9 @@
     </table>
 </div>
 
-<div class="container mt-5">
+<div >
     <!-- Returned Items Table -->
-    <h2 style="text-decoration: underline;">Returned Items</h2>
+    <h2>Returned Items</h2>
     
     <div style="margin-top: 2px; text-align: right;">
         <!-- Record Return Button -->

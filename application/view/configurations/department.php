@@ -1,42 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Departments</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-
-    <style>
-        .container {
-            margin-top: 80px;
-        }
-        .table-container {
-            width: 70%;
-        }
-        .form-container {
-            width: 30%;
-        }
-        .card {
-            padding: 15px;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h4>Manage Departments</h4>
+<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
+<div>
+    <h2>Departments</h2>
 
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
     <?php endif; ?>
+    <div class="top-bar" style="display: flex; justify-content: flex-end; padding: 10px;">
+        <button class="add-btn " onclick="openAddModal()">Add Department</button>
+    </div>
 
     <div class="row">
-        <!-- Table -->
-        <div class="col-md-8 table-container">
-            <table class="table table-bordered">
+        <!-- Table takes up full width -->
+        <div class="col-md-12 table-container">
+            <table >
                 <thead>
                     <tr>
                         <th>Department Name</th>
@@ -53,14 +29,14 @@
                             <td>
                                 <!-- Edit Button -->
                                 <button class="btn btn-warning btn-sm"
-                                    onclick="editDepartment(
+                                    onclick="openEditModal(
                                         <?= $department['id'] ?>, 
                                         '<?= htmlspecialchars($department['department_name'], ENT_QUOTES) ?>',
                                         <?= $department['parent_id'] ?? 'null' ?>
                                     )">
                                     Edit
                                 </button>
-                                
+                                  
                                 <!-- Delete Button -->
                                 <a href="<?= URL ?>department/delete?delete=<?= $department['id'] ?>" 
                                    class="btn btn-danger btn-sm" 
@@ -76,51 +52,28 @@
                     </tr>
                 <?php endif; ?>
                 </tbody>
-            </table>
-        </div>
-
-        <!-- Form -->
-        <div class="col-md-4 form-container">
-            <div class="card">
-                <h5 class="text-center">Add Department</h5>
-                <form method="POST" action="<?= URL ?>department/add">
-                    <div class="mb-3">
-                        <label>Department Name:</label>
-                        <input type="text" name="department_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label>Parent Department:</label>
-                        <select name="parent_id" class="form-control">
-                            <option value="">None</option>
-                            <?php foreach ($departments as $dept): ?>
-                                <option value="<?= $dept['id'] ?>"><?= htmlspecialchars($dept['department_name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Add Department</button>
-                </form>
-            </div>
+            </table>            
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit/Add Modal -->
     <div id="editModal" class="modal fade" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="edit-form" method="POST" action="<?= URL ?>department/edit">
+                <form id="department-form" method="POST" action="<?= URL ?>department/add">
                     <div class="modal-header">
-                        <h5 class="modal-title">Edit Department</h5>
+                        <h5 class="modal-title" id="modalTitle">Add Department</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="id" id="edit_id">
+                        <input type="hidden" name="id" id="department_id">
                         <div class="mb-3">
                             <label>Department Name:</label>
-                            <input type="text" name="department_name" id="edit_name" class="form-control" required>
+                            <input type="text" name="department_name" id="department_name" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label>Parent Department:</label>
-                            <select name="parent_id" id="edit_parent_id" class="form-control">
+                            <select name="parent_id" id="parent_id" class="form-control">
                                 <option value="">None</option>
                                 <?php foreach ($departments as $dept): ?>
                                     <option value="<?= $dept['id'] ?>"><?= htmlspecialchars($dept['department_name']) ?></option>
@@ -129,7 +82,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" name="update" class="btn btn-primary">Update</button>
+                        <button type="submit" class="btn btn-primary" id="saveButton">Add Department</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </form>
@@ -139,25 +92,34 @@
 
 </div>
 
-<!-- Bootstrap JS (Ensure this is included for the modal to work) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    window.editDepartment = function (id, name, parentId) {
-        document.getElementById('edit_id').value = id;
-        document.getElementById('edit_name').value = name;
-        
-        // Set parent department in dropdown
-        const parentDropdown = document.getElementById('edit_parent_id');
-        for (let i = 0; i < parentDropdown.options.length; i++) {
-            if (parentDropdown.options[i].value == parentId) {
-                parentDropdown.options[i].selected = true;
-                break;
-            }
-        }
+    // Open Add Department Modal
+    window.openAddModal = function () {
+        // Reset the form for adding a new department
+        document.getElementById('department-form').action = '<?= URL ?>department/add';
+        document.getElementById('modalTitle').textContent = 'Add Department';
+        document.getElementById('department_id').value = ''; // Ensure the id field is empty
+        document.getElementById('department_name').value = ''; // Clear department name
+        document.getElementById('parent_id').value = ''; // Reset parent department
 
-        // Open Bootstrap Modal
+        var editModal = new bootstrap.Modal(document.getElementById('editModal'), {
+            keyboard: false
+        });
+        editModal.show();
+    }
+
+    // Open Edit Department Modal
+    window.openEditModal = function (id, name, parentId) {
+        // Populate the form with the current department data
+        document.getElementById('department-form').action = '<?= URL ?>department/edit';
+        document.getElementById('modalTitle').textContent = 'Edit Department';
+        document.getElementById('department_id').value = id;
+        document.getElementById('department_name').value = name;
+        document.getElementById('parent_id').value = parentId;
+
         var editModal = new bootstrap.Modal(document.getElementById('editModal'), {
             keyboard: false
         });
@@ -167,4 +129,3 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 </body>
-</html>

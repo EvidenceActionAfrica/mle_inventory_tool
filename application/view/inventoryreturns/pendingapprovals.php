@@ -1,5 +1,5 @@
 <link href="<?= htmlspecialchars(URL) ?>css/tables.css" rel="stylesheet">
-    <div class="container mt-5">
+    <div >
         <h2>Pending Item Returns</h2>
         <table>
             <thead>
