@@ -1,52 +1,75 @@
-<link href="<?php echo URL; ?>css/tables.css" rel="stylesheet">
-    <div >
-        <h2>Items In Stock</h2>
+<!-- CSS Files -->
+<link rel="stylesheet" href="<?php echo URL; ?>css/tables.css">
+<link rel="stylesheet" href="<?php echo URL; ?>css/style.css">
+<!-- Simple DataTables CSS -->
+<link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
 
-        <!-- Success/Error Messages -->
-        <?php if (isset($_GET['success'])): ?>
-            <p class="success-message"><?= htmlspecialchars($_GET['success']); ?></p>
-        <?php elseif (isset($_GET['error'])): ?>
-            <p class="error-message"><?= htmlspecialchars($_GET['error']); ?></p>
-        <?php endif; ?>
+<main>
+<div class="container-fluid px-4">
+    <h3 class="mt-4">Items In Stock</h3>
 
-        <!-- Top Bar (Search Button) -->
-        <div class="d-flex justify-content-end align-items-center mb-3">
-            <form method="GET" action="<?= URL ?>inventoryreturn/searchUnassignedItems" class="search-form" style="width: 33%;">
-                <input type="text" name="search" placeholder="Search by Description, Serial No., or Tag No." 
-                    class="form-control me-2" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>" required>
-                <button type="submit" class="btn btn-primary">Search</button>
-                <?php if (!empty($_GET['search'])): ?>
-                    <a href="<?= URL ?>inventoryreturn/unassignedItems" class="reset-search">Reset</a>
-                <?php endif; ?>
-            </form>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="<?php echo URL; ?>home">Home</a></li>
+        <li class="breadcrumb-item">Items In Stock</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            These are items that are currently available and not assigned to any user.
         </div>
-        
-        <!-- Inventory Table -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Serial Number</th>
-                    <th>Tag Number</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php if (!empty($unassignedItems)): ?>
-                <?php foreach ($unassignedItems as $item) : ?>
-                        <tr>
-                            <td><?= htmlspecialchars($item['category']) ?></td>
-                            <td><?= htmlspecialchars($item['description']) ?></td>
-                            <td><?= htmlspecialchars($item['serial_number']) ?></td>
-                            <td><?= htmlspecialchars($item['tag_number']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="6" class="text-center">No items in stock found.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-boxes me-1"></i>
+        </div>
+        <div class="card-body">
+            <!-- Success/Error Messages -->
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert alert-success"><?= htmlspecialchars($_GET['success']); ?></div>
+            <?php elseif (isset($_GET['error'])): ?>
+                <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']); ?></div>
+            <?php endif; ?>
+
+            <!-- Items Table -->
+            <table id="datatablesSimple">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Serial Number</th>
+                        <th>Tag Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($unassignedItems)): ?>
+                        <?php foreach ($unassignedItems as $item): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($item['category']) ?></td>
+                                <td><?= htmlspecialchars($item['description']) ?></td>
+                                <td><?= htmlspecialchars($item['serial_number']) ?></td>
+                                <td><?= htmlspecialchars($item['tag_number']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="4" class="text-center">No items in stock found.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- Simple DataTables JS -->
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', event => {
+        const datatablesSimple = document.getElementById('datatablesSimple');
+        if (datatablesSimple) {
+            new simpleDatatables.DataTable(datatablesSimple);
+        }
+    });
+</script>
