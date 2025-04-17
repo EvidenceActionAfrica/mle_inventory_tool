@@ -38,39 +38,40 @@ class Model
     // user management function
     public function get_users()
     {
-        $sql = "SELECT staff_login.*, 
-                       departments.department_name, 
-                       positions.position_name 
-                FROM staff_login 
-                LEFT JOIN departments ON staff_login.department = departments.id
-                LEFT JOIN positions ON staff_login.position = positions.id";
-        
+        $sql = "SELECT sl.*, d.department_name, p.position_name, CONCAT(loc.location_name, ' - ', o.office_name) as dutystation
+                FROM staff_login sl
+                LEFT JOIN departments d ON sl.department = d.id
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN offices o ON sl.dutystation = o.id
+                LEFT JOIN locations loc ON o.location_id = loc.id";
         $query = $this->db->prepare($sql);
         $query->execute();
+        return $query->fetchAll(PDO::FETCH_OBJ);
         
         return $query->fetchAll(PDO::FETCH_OBJ);
     }
     
-    public function insert_user($email, $department, $position, $role, $password = 'mle2025')
+    public function insert_user($email, $department, $position, $role, $dutystation = null, $password = 'mle2025')
     {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        $sql = "INSERT INTO staff_login (email, department, position, role, password) 
-                VALUES (:email, :department, :position, :role, :password)";
+    
+        $sql = "INSERT INTO staff_login (email, department, position, role, dutystation, password) 
+                VALUES (:email, :department, :position, :role, :dutystation, :password)";
         $query = $this->db->prepare($sql);
         $query->bindValue(':email', $email, PDO::PARAM_STR);
         $query->bindValue(':department', $department ?: null, PDO::PARAM_INT);
         $query->bindValue(':position', $position ?: null, PDO::PARAM_INT);
         $query->bindValue(':role', $role, PDO::PARAM_STR);
+        $query->bindValue(':dutystation', $dutystation ?: null, PDO::PARAM_INT);
         $query->bindValue(':password', $hashed_password, PDO::PARAM_STR);
 
         return $query->execute();
     }
-    
-    public function edit_user($id, $email, $department, $position, $role)
+       
+    public function edit_user($id, $email, $department, $position, $role, $dutystation)
     {
         $sql = "UPDATE staff_login 
-                SET email=:email, department=:department, position=:position, role=:role 
+                SET email=:email, department=:department, position=:position, role=:role, dutystation=:dutystation 
                 WHERE id=:id";
         $query = $this->db->prepare($sql);
         $parameters = array(
@@ -78,9 +79,9 @@ class Model
             ':department' => $department,
             ':position' => $position,
             ':role' => $role,
+            ':dutystation' => $dutystation,
             ':id' => $id
         );
-
         return $query->execute($parameters);
     }
          
@@ -351,34 +352,38 @@ class Model
     // Fetch all assignments
     public function getAllAssignments() {
         $sql = "SELECT 
-                ia.id,
-                CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                       LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
-                ia.email,
-                d.department_name AS department,  
-                p.position_name AS position,    
-                ia.location,
-                i.category_id,
-                i.description,
-                ia.serial_number,
-                ia.tag_number,
-                ia.date_assigned,
-                ia.managed_by,
-                ia.acknowledgment_status,
-                ia.created_at,
-                ia.updated_at
-            FROM inventory_assignment ia
-            LEFT JOIN inventory i ON ia.item = i.id
-            LEFT JOIN staff_login sl ON ia.email = sl.email
-            LEFT JOIN departments d ON sl.department = d.id  
-            LEFT JOIN positions p ON sl.position = p.id
-            LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
-            WHERE ir.assignment_id IS NULL";  
+                    ia.id,
+                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
+                    ia.email,
+                    d.department_name AS department,  
+                    p.position_name AS position,    
+                    CONCAT(loc.location_name, ' - ', o.office_name) AS location, -- formatted location
+                    i.category_id,
+                    i.description,
+                    ia.serial_number,
+                    ia.tag_number,
+                    ia.date_assigned,
+                    ia.managed_by,
+                    ia.acknowledgment_status,
+                    ia.created_at,
+                    ia.updated_at
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN staff_login sl ON ia.email = sl.email
+                LEFT JOIN departments d ON sl.department = d.id  
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN offices o ON sl.dutystation = o.id 
+                LEFT JOIN locations loc ON o.location_id = loc.id 
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id  
+                WHERE ir.assignment_id IS NULL";  
     
         $query = $this->db->prepare($sql);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+        
     
     //searchbutton
     public function searchAssignments($query) {
@@ -491,7 +496,7 @@ class Model
     }
 
     // Assign items to users
-    public function addAssignment($user_id, $item_ids, $date_assigned, $manager_email, $location)
+    public function addAssignment($user_id, $item_ids, $date_assigned, $manager_email)
     {
         $manager = $this->getManagerEmail($manager_email);
         if (!$manager) {
@@ -533,16 +538,15 @@ class Model
             }
 
             $sql = "INSERT INTO inventory_assignment 
-                        (name, email, role, location, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
+                        (name, email, role, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
                     VALUES 
-                        (:name, :email, :role, :location, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
+                        (:name, :email, :role, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
 
             $query = $this->db->prepare($sql);
             $parameters = [
                 ':name' => $user['name'],
                 ':email' => $user['email'],
                 ':role' => $user['role'],
-                ':location' => $location,
                 ':item_id' => $item_id,
                 ':serial_number' => $item['serial_number'],
                 ':tag_number' => $item['tag_number'],
@@ -641,7 +645,6 @@ class Model
             ':name' => $user['name'],
             ':email' => $user['email'],
             ':role' => $user['role'],
-            ':location' => $updatedData['location'],
             ':managed_by' => $managed_by,
             ':date_assigned' => $updatedData['date_assigned']
         ];
@@ -667,10 +670,10 @@ class Model
             }
     
             $insertSql = "INSERT INTO inventory_assignment 
-                              (name, email, role, location, item, serial_number, tag_number, managed_by, 
+                              (name, email, role, item, serial_number, tag_number, managed_by, 
                               acknowledgment_status, created_at, updated_at, date_assigned) 
                           VALUES 
-                              (:name, :email, :role, :location, :item_id, :serial_number, :tag_number, 
+                              (:name, :email, :role, :item_id, :serial_number, :tag_number, 
                               :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
     
             $insertStmt = $this->db->prepare($insertSql);
@@ -678,7 +681,6 @@ class Model
                 ':name' => $user['name'],
                 ':email' => $user['email'],
                 ':role' => $user['role'],
-                ':location' => $updatedData['location'],
                 ':item_id' => $inventory_id,
                 ':serial_number' => $item['serial_number'],
                 ':tag_number' => $item['tag_number'],
@@ -717,7 +719,6 @@ class Model
                     ia.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
-                    ia.location,
                     i.category_id,
                     i.description,
                     ia.serial_number,
@@ -766,7 +767,6 @@ class Model
                         ia.email,
                         d.department_name AS department,  
                         p.position_name AS position,
-                        ia.location,
                         i.category_id,
                         i.description,
                         ia.serial_number,
@@ -1125,7 +1125,6 @@ class Model
                     ia.email AS assigned_user_email,
                     d.department_name AS department,
                     p.position_name AS position,
-                    ia.location,
                     c.category AS category,
                     i.description,
                     ia.serial_number,
@@ -1156,6 +1155,7 @@ class Model
         $query = $this->db->prepare($sql);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
+        return $result['in_use_count'];
     }
     
     //search in inuse page
@@ -1338,6 +1338,7 @@ class Model
             $unassignedItems = $query->fetchAll(PDO::FETCH_ASSOC);
             
             return $unassignedItems;
+            return $result['in_stock_count'];
             
         } catch (PDOException $e) {
             // Handle any SQL exceptions
@@ -1538,7 +1539,6 @@ class Model
                     sl.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
-                    ia.location,
                     i.category_id,
                     i.description,
                     ia.serial_number,
@@ -1702,7 +1702,6 @@ class Model
                     sl.email AS user_email,
                     d.department_name AS department,  
                     p.position_name AS position,    
-                    ia.location,
                     i.category_id,
                     i.description,
                     ia.serial_number,
@@ -1787,9 +1786,99 @@ class Model
         }
     }
     
-
+    // Fetch the counts for the dashboards
+    public function getItemStates()
+    {
+        $query = "
+            SELECT 
+                SUM(CASE 
+                    WHEN ir.item_state = 'functional' AND ir.assignment_id IS NULL THEN 1
+                    WHEN ir.item_state = 'functional' THEN 1
+                    ELSE 0 
+                END) AS functional,
+                SUM(CASE 
+                    WHEN ir.item_state = 'lost' THEN 1 
+                    ELSE 0 
+                END) AS lost,
+                SUM(CASE 
+                    WHEN ir.item_state = 'damaged' THEN 1 
+                    ELSE 0 
+                END) AS damaged
+            FROM inventory_assignment ia
+            LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id 
+        ";
+        
+        $result = $this->db->query($query);
+        $data = $result->fetch(PDO::FETCH_ASSOC);
+        
+        return $data;
+    }
     
+    public function getInUseCount() {
+        $sql = "SELECT COUNT(*) AS in_use_count
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id
+                WHERE ir.assignment_id IS NULL 
+                AND ia.acknowledgment_status = 'acknowledged'";
     
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['in_use_count'];
+    }
+    
+    public function getInStockCount() {
+        $sql = "SELECT COUNT(*) AS in_stock_count
+                FROM inventory i
+                LEFT JOIN inventory_assignment ia ON i.id = ia.item
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id
+                WHERE (ia.id IS NULL 
+                        OR (ir.assignment_id IS NOT NULL 
+                            AND (ir.item_state = 'functional' AND ir.status = 'approved')
+                            OR (ir.item_state = 'damaged' AND ir.repair_status = 'Repairable'))
+                       )";
+    
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result['in_stock_count'];
+    }
+    
+    public function getItemCountsByCategory() {
+        $sql = "SELECT 
+                    c.category AS category_name,
+                    COUNT(i.id) AS item_count
+                FROM inventory i
+                LEFT JOIN categories c ON i.category_id = c.id
+                GROUP BY c.category";
+    
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function get_user_by_email($email)
+    {
+        $sql = "SELECT 
+                    sl.*, 
+                    d.department_name, 
+                    p.position_name, 
+                    CONCAT(loc.location_name, ' - ', o.office_name) as dutystation
+                FROM staff_login sl
+                LEFT JOIN departments d ON sl.department = d.id
+                LEFT JOIN positions p ON sl.position = p.id
+                LEFT JOIN offices o ON sl.dutystation = o.id
+                LEFT JOIN locations loc ON o.location_id = loc.id
+                WHERE sl.email = :email
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_OBJ);
+    }
+     
 }
 
 

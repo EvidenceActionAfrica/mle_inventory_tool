@@ -37,7 +37,7 @@
         <div class="card-header">
             <i class="fas fa-tools me-1"></i> 
         </div>
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <!-- Data Table -->
             <table id="damagedItemsTable">
                 <thead>

@@ -29,7 +29,7 @@
         <div class="card-header">
             <i class="fas fa-trash-alt me-1"></i> 
         </div>
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <table id="disposedItemsTable">
                 <thead>
                     <tr>

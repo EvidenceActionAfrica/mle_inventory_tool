@@ -172,6 +172,28 @@ th {
         text-align: center;
     }
 }
+.table-responsive {
+    scrollbar-width: auto; 
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+
+table {
+    white-space: nowrap; 
+}
+
 .breadcrumb {
     --bs-breadcrumb-padding-x: 0;
     --bs-breadcrumb-padding-y: 0;
@@ -297,7 +319,37 @@ th {
     --bs-pagination-font-size: 0.875rem;
     --bs-pagination-border-radius: 0.25rem;
   }
+  /* Makes the table scrollable on overflow */
+.table-responsive {
+    overflow-x: auto;
+    position: relative;
+  }
   
+  /* Always show scroll bar on bottom */
+  .table-responsive::-webkit-scrollbar {
+    height: 8px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+  }
+  
+  .table-responsive::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+  }
+  
+  .table-responsive::-webkit-scrollbar-track {
+    background-color: #f1f1f1;
+  }
+  
+/* Hide arrows on larger screens if not needed */
+@media (min-width: 992px) {
+  .scroll-btn {
+    display: none;
+  }
+}
+
 /* Card container styling */
 .card {
     --bs-card-spacer-y: 1rem;

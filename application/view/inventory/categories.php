@@ -23,7 +23,7 @@
             <button class="add-btn" onclick="openModal()">Add Category</button>
         </div>
 
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <?php if (isset($_GET['success'])): ?>
                 <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
             <?php endif; ?>
@@ -42,13 +42,13 @@
                             <td><?= htmlspecialchars($category['category']) ?></td>
                             <td><?= htmlspecialchars($category['description']) ?></td>
                             <td>
-                                <button class="btn btn-warning btn-sm"
+                                <button class="btn btn-sm btn-outline-primary"
                                         onclick="openModal(<?= $category['id'] ?>, '<?= htmlspecialchars($category['category']) ?>', '<?= htmlspecialchars($category['description']) ?>')">
                                     Edit
                                 </button>
 
                                 <a href="<?= URL; ?>categories/delete?delete=<?= $category['id'] ?>" 
-                                   class="btn btn-danger btn-sm" 
+                                    class="btn btn-sm btn-outline-danger" 
                                    onclick="return confirm('Are you sure you want to delete this category?');">
                                     Delete
                                 </a>

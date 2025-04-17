@@ -22,16 +22,18 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fas fa-table me-1"></i></span>           
             <div class="col-md-4 text-end">
-                <a href="<?= URL; ?>inventoryreturn/downloadReturnedItems" 
-                class="add-btn" 
-                style="background-color: #05545a; border-color: #05545a;">
-                Download
-                </a>
+                <form action="<?= URL; ?>inventoryreturn/downloadReturnedItems" method="GET" class="mb-0">
+                    <button type="submit" class="add-btn" 
+                        style="background-color: #05545a; border-color: #05545a;">
+                        Download
+                    </button>
+                </form>
             </div>
+
         </div>
 
         <!-- DataTable -->
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <table id="datatablesSimple" class="styled-table">
                 <thead>
                     <tr>

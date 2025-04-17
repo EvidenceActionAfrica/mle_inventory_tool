@@ -106,18 +106,6 @@
                     </select>
                 </div>
 
-                <!-- Location -->
-                <div class="mb-3">
-                    <label class="form-label">Select Location (Office)</label>
-                    <select name="location" class="form-select" required>
-                        <option value="">Choose a location</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?= htmlspecialchars($office['office_name']); ?>" <?= $office['office_name'] == $assignment['location'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($office['office_name'] . " - " . $office['location_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
 
                 <!-- Date Assigned -->
                 <div class="mb-3">

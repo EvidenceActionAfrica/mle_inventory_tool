@@ -21,7 +21,7 @@
             <button class="btn add-btn btn-sm" onclick="openModal('add')">Add Position</button>
         </div>
 
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <table id="positionsTable">
                 <thead>
                     <tr>
@@ -37,12 +37,12 @@
                             <td><?= htmlspecialchars($position['position_name']); ?></td>
                             <td><?= htmlspecialchars($position['hierarchy_level']); ?></td>
                             <td>
-                                <button class="btn btn-warning btn-sm"
+                                <button class="btn btn-sm btn-outline-primary"
                                     onclick="openModal('edit', <?= $position['id'] ?>, '<?= htmlspecialchars($position['position_name']) ?>', <?= $position['hierarchy_level'] ?>)">
                                     Edit
                                 </button>
                                 <a href="<?= URL ?>positions/delete?delete=<?= $position['id'] ?>" 
-                                   class="btn btn-danger btn-sm" 
+                                   class="btn btn-sm btn-outline-danger"
                                    onclick="return confirm('Are you sure you want to delete this position?');">
                                    Delete
                                 </a>

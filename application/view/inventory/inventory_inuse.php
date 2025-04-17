@@ -23,7 +23,7 @@
             <div class="card-header">
                 <i class="fas fa-boxes me-1"></i>
             </div>
-            <div class="card-body">
+            <div class="card-body table-responsive">
                 <!-- Table -->
                 <table id="datatablesSimple">
                     <thead>

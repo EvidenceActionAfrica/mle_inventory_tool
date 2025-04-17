@@ -21,7 +21,7 @@
             <button class="btn add-btn btn-sm" onclick="openLocationModal()">Add Location</button>
         </div>
 
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <table id="locationsTable">
                 <thead>
                     <tr>
@@ -35,7 +35,7 @@
                         <tr>
                             <td><?= htmlspecialchars($location['location_name']) ?></td>
                             <td>
-                                <button class="btn btn-warning btn-sm"
+                                <button class="btn btn-sm btn-outline-primary"
                                         onclick="openLocationModal(
                                             <?= $location['id'] ?>,
                                             '<?= htmlspecialchars($location['location_name'], ENT_QUOTES) ?>'
@@ -43,7 +43,7 @@
                                     Edit
                                 </button>
                                 <a href="<?= URL ?>location/delete?delete=<?= $location['id'] ?>" 
-                                   class="btn btn-danger btn-sm" 
+                                   class="btn btn-sm btn-outline-danger"
                                    onclick="return confirm('Are you sure you want to delete this location?')">
                                    Delete
                                 </a>

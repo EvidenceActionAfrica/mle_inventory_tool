@@ -33,9 +33,8 @@ class inventoryassignment extends Controller
             $item_ids = $_POST['inventory_id']; 
             $date_assigned = $_POST['date_assigned'];
             $manager_email = $_POST['managed_by'];
-            $location = $_POST['location'];
 
-            $result = $this->model->addAssignment($user_id, $item_ids, $date_assigned, $manager_email, $location);
+            $result = $this->model->addAssignment($user_id, $item_ids, $date_assigned, $manager_email);
 
             if (strpos($result, 'successfully') !== false) {
                 header("Location: " . URL . "inventoryassignment?success=" . urlencode($result));
@@ -81,7 +80,6 @@ class inventoryassignment extends Controller
             // Validate input data
             $updatedData = [
                 'user_id' => $_POST['user_id'], 
-                'location' => $_POST['location'], 
                 'date_assigned' => $_POST['date_assigned'], 
                 'managed_by' => $_POST['managed_by']
             ];

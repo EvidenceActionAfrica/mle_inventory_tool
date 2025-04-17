@@ -21,7 +21,7 @@
             <button class="btn add-btn btn-sm" onclick="openAddModal()">Add Office</button>
         </div>
 
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <table id="officesTable">
                 <thead>
                     <tr>
@@ -36,7 +36,7 @@
                         <td><?= htmlspecialchars($office['office_name']) ?></td>
                         <td><?= htmlspecialchars($office['location_name']) ?></td>
                         <td>
-                            <button class="btn btn-warning btn-sm"
+                            <button class="btn btn-sm btn-outline-primary"
                                     onclick="editOffice(
                                         <?= $office['id'] ?>,
                                         '<?= htmlspecialchars($office['office_name'], ENT_QUOTES) ?>',
@@ -45,7 +45,7 @@
                                 Edit
                             </button>
                             <a href="<?= URL ?>office/delete?delete=<?= $office['id'] ?>" 
-                               class="btn btn-danger btn-sm" 
+                            class="btn btn-sm btn-outline-danger" 
                                onclick="return confirm('Are you sure you want to delete this office?')">
                                Delete
                             </a>

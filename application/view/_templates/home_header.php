@@ -115,15 +115,64 @@ $role = $_SESSION['role'] ?? null;
         <img src="<?php echo URL; ?>img/ea_logo.png" alt="logo" style="padding: 10px; width: 150px; height: auto;">
 </a>
     <div class="d-flex align-items-center justify-content-end w-100">
-        <!-- Display user name if logged in -->
-        <?php 
-        if (isset($_SESSION['user_email'])) {
-            $user_email = $_SESSION['user_email'];
-            $user_name = ucwords(explode('@', $user_email)[0]);
-            echo "<p class='mb-0 me-3'><b>" . htmlspecialchars($user_name) . "!</b></p>";
-        }
-        ?>
-        <a href="<?php echo URL; ?>login/logout" class="bt-logout">LOGOUT</a>
+            <?php 
+            if (isset($_SESSION['user_email'])) {
+                $user_email = $_SESSION['user_email'];
+                $user_name = ucwords(explode('@', $user_email)[0]);
+                echo "
+                    <div style='position: relative; display: inline-block;'>
+                        <span id='profileTrigger' class='mb-0' style='cursor: pointer;' onclick='toggleProfileCard()'>
+                            <i class='fas fa-user-circle' style='font-size: 22px; color: #e600a0;'></i>
+                            <b style='margin-left: 6px; font-size: 16px;'>" . htmlspecialchars($user_name) . "</b>
+                        </span>
+
+                        <div id='profileCard' style='display: none; position: absolute; top: 40px; right: 0; background: #fff; border: 1px solid #ddd; border-radius: 16px; padding: 25px; width: 380px; box-shadow: 0px 8px 20px rgba(0,0,0,0.15); z-index: 999; font-size: 15px; line-height: 1.7;'>
+                            <p><i class='fas fa-smile text-warning'></i> <strong>Name:</strong> <span id='cardName'></span></p>
+                            <p><i class='fas fa-envelope text-danger'></i> <strong>Email:</strong> <span id='cardEmail'></span></p>
+                            <p><i class='fas fa-building text-info'></i> <strong>Department:</strong> <span id='cardDepartment'></span></p>
+                            <p><i class='fas fa-briefcase text-success'></i> <strong>Position:</strong> <span id='cardPosition'></span></p>
+                            <p><i class='fas fa-map-marker-alt text-muted'></i> <strong>Duty Station:</strong> <span id='cardDuty'></span></p>
+                            <div style='text-align: center; margin-top: 20px;'>
+                                <a href='" . URL . "login/logout' class='bt-logout' style='padding: 8px 18px;  color: white; text-decoration: none; border-radius: 8px; font-weight: 500;'>LOGOUT</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function toggleProfileCard() {
+                            const card = document.getElementById('profileCard');
+                            if (card.style.display === 'none') {
+                                fetchUserProfile();
+                                card.style.display = 'block';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        }
+
+                        function fetchUserProfile() {
+                            fetch('" . URL . "users/getUserProfile')
+                            .then(response => response.json())
+                            .then(data => {
+                                document.getElementById('cardName').innerText = data.name;
+                                document.getElementById('cardEmail').innerText = data.email;
+                                document.getElementById('cardDepartment').innerText = data.department;
+                                document.getElementById('cardPosition').innerText = data.position;
+                                document.getElementById('cardDuty').innerText = data.dutystation;
+                            });
+                        }
+
+                        // Hide card when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const card = document.getElementById('profileCard');
+                            const trigger = document.getElementById('profileTrigger');
+                            if (!card.contains(e.target) && !trigger.contains(e.target)) {
+                                card.style.display = 'none';
+                            }
+                        });
+                    </script>
+                ";
+            }
+            ?>
     </div>
 </div>
 

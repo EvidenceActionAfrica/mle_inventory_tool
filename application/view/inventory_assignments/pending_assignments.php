@@ -20,7 +20,7 @@
     <div class="card-header">
         <i class="fas fa-tasks me-1"></i>
     </div>
-    <div class="card-body">
+    <div class="card-body table-responsive">
         <?php if (!empty($_GET['success'])): ?>
             <div class="alert alert-success"><?= htmlspecialchars($_GET['success']); ?></div>
         <?php endif; ?>

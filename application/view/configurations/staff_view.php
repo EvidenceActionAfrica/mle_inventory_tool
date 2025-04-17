@@ -23,7 +23,7 @@
                 <button class="add-btn" onclick="openUserModal()">Add User</button>
             </div>
 
-            <div class="card-body">
+            <div class="card-body table-responsive">
                 <?php if (isset($_GET['success'])): ?>
                     <div class="alert alert-success"> <?= htmlspecialchars($_GET['success']) ?> </div>
                 <?php endif; ?>
@@ -35,6 +35,7 @@
                             <th>Department</th>
                             <th>Position</th>
                             <th>Role</th>
+                            <th>Duty Station</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -46,18 +47,20 @@
                                     <td><?= htmlspecialchars($user->department_name) ?></td>
                                     <td><?= htmlspecialchars($user->position_name) ?></td>
                                     <td><?= htmlspecialchars($user->role) ?></td>
+                                    <td><?= htmlspecialchars($user->dutystation) ?></td>
                                     <td>
-                                        <button class="btn btn-warning btn-sm" 
+                                        <button class="btn btn-sm btn-outline-primary"
                                             onclick="openUserModal('<?php echo $user->id; ?>', 
                                                                     '<?php echo $user->email; ?>', 
                                                                     '<?php echo $user->department; ?>', 
                                                                     '<?php echo $user->position; ?>', 
-                                                                    '<?php echo $user->role; ?>')">
+                                                                    '<?php echo $user->role; ?>',
+                                                                    '<?php echo $user->dutystation; ?>')">
                                             Edit
                                         </button>
 
                                         <a href="<?= URL ?>users/delete?delete=<?= $user->id ?>" 
-                                           class="btn btn-danger btn-sm" 
+                                           class="btn btn-sm btn-outline-danger"
                                            onclick="return confirm('Are you sure you want to delete this user?');">
                                            Delete
                                         </a>
@@ -118,6 +121,18 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label for="dutystation">Duty Station (Office):</label>
+                        <select name="dutystation" id="user_dutystation" class="form-control">
+                            <option value="">Select Duty Station</option>
+                            <?php foreach ($offices as $office): ?>
+                                <option value="<?= $office['id'] ?>">
+                                    <?= htmlspecialchars($office['location_name'] . ' - ' . $office['office_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary" id="submitButton">Add User</button>
@@ -131,33 +146,24 @@
 <!-- JS Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-function openUserModal(id = '', email = '', departmentId = '', positionId = '', role = '') {
-    let modalTitle = document.getElementById('userModalTitle');
-    let submitButton = document.getElementById('submitButton');
-    let form = document.getElementById('user-form');
+function openUserModal(id = '', email = '', department = '', position = '', role = '', dutystation = '') {
+    document.getElementById('user_id').value = id;
+    document.getElementById('user_email').value = email;
+    document.getElementById('user_department').value = department;
+    document.getElementById('user_position').value = position;
+    document.getElementById('user_role').value = role;
+    document.getElementById('user_dutystation').value = dutystation;
 
+    // Change modal title and form mode
     if (id) {
-        modalTitle.innerText = 'Edit User';
-        submitButton.innerText = 'Update User';
-        form.action = "<?= URL ?>users/edit";
-        document.getElementById('user_mode').value = 'edit';
-        document.getElementById('user_id').value = id;
-        document.getElementById('user_email').value = email;
-        document.getElementById('user_department').value = departmentId;
-        document.getElementById('user_position').value = positionId;
-        document.getElementById('user_role').value = role;
+        document.getElementById('userModalTitle').innerText = 'Edit User';
+        document.getElementById('user-form').action = '<?= URL ?>users/edit';
     } else {
-        modalTitle.innerText = 'Add User';
-        submitButton.innerText = 'Add User';
-        form.action = "<?= URL ?>users/add";
-        document.getElementById('user_mode').value = 'add';
-        document.getElementById('user_id').value = '';
-        document.getElementById('user_email').value = '';
-        document.getElementById('user_department').selectedIndex = 0;
-        document.getElementById('user_position').selectedIndex = 0;
-        document.getElementById('user_role').selectedIndex = 0;
+        document.getElementById('userModalTitle').innerText = 'Add User';
+        document.getElementById('user-form').action = '<?= URL ?>users/add';
     }
 
+    new bootstrap.Modal(document.getElementById('userModal')).show();
     var myModal = new bootstrap.Modal(document.getElementById('userModal'));
     myModal.show();
 }

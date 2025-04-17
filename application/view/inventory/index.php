@@ -27,7 +27,7 @@
             </form>
         </div>
 
-        <div class="card-body">
+        <div class="card-body table-responsive">
             <!-- Inventory Table -->
             <table id="datatablesSimple">
                 <thead>

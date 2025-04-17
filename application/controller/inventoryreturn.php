@@ -3,7 +3,30 @@
 class inventoryreturn extends Controller
 {
 
-    public function index()
+    public function index() 
+    {
+        {
+            session_start();
+        
+            if (!isset($_SESSION['user_email'])) {
+                header("Location: " . URL . "login");
+                exit();
+            }
+        
+            if ($this->model === null) {
+                echo "Model not loaded properly!";
+                exit();
+            }
+        
+            $user_email = $_SESSION['user_email']; 
+            $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
+            require APP . 'view/_templates/sessions.php';
+            require APP . 'view/_templates/header.php';
+            require APP . 'view/inventoryreturns/index.php';
+        }
+    }
+
+    public function myreturns()
     {
         session_start();
     
@@ -17,14 +40,43 @@ class inventoryreturn extends Controller
             exit();
         }
     
-        $user_email = $_SESSION['user_email']; 
-        $returned_by = $_SESSION['user_email']; // Adjust to match your session variable for the logged-in user's email
-        $returnedItems = $this->model->getReturnedItems($returned_by);
-        $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
-        require APP . 'view/_templates/sessions.php';
+        $user_email = $_SESSION['user_email'];
+        $returned_by = $user_email; // Keep full email; use strstr only if you need a username elsewhere
+    
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $assignment_ids = $_POST['assignment_ids'] ?? [];
+            $return_date = $_POST['return_date'] ?? date('Y-m-d H:i:s');
+            $receiver_id = $_POST['receiver_id'] ?? null;
+    
+            if (empty($assignment_ids)) {
+                $_SESSION['error'] = "No Assignment IDs selected!";
+                header("Location: " . URL . "inventoryreturn/myreturns");
+                exit();
+            }
+    
+            foreach ($assignment_ids as $assignment_id) {
+                $result = $this->model->recordReturn($assignment_id, $returned_by, $receiver_id, $return_date);
+    
+                if (!$result) {
+                    $_SESSION['error'] = "Failed to return Assignment ID: $assignment_id";
+                }
+            }
+    
+            $_SESSION['success'] = "Return(s) recorded successfully.";
+            header("Location: " . URL . "inventoryreturn/myreturns");
+            exit();
+        }
+    
+        // GET method - Load data and show form
+        $items = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
+        $receivers = $this->model->getReceivers();
+        $returnedItems = $this->model->getReturnedItems($user_email);
+    
         require APP . 'view/_templates/header.php';
-        require APP . 'view/inventoryreturns/index.php';
+        require APP . 'view/_templates/sessions.php';
+        require APP . 'view/inventoryreturns/return_item.php';
     }
+    
     
     public function add()
     {
@@ -80,7 +132,7 @@ class inventoryreturn extends Controller
             }
         
             // Redirect after processing
-            header("Location: " . URL . "inventoryReturn?success=Items returned successfully!");
+            header("Location: " . URL . "inventoryreturn/myreturns?success=Items returned successfully!");
             exit();
         }
     }        

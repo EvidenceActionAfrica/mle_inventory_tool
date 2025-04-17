@@ -25,7 +25,7 @@
         </form>
     </div>
 
-    <div class="card-body">
+    <div class="card-body table-responsive">
 
         <!-- Success & Error Messages -->
         <?php if (isset($_GET['success'])): ?>
@@ -33,8 +33,8 @@
         <?php elseif (isset($_GET['error'])): ?>
             <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']); ?></div>
         <?php endif; ?>
-
-
+        
+        <div class="card-body table-responsive">
         <!-- DataTable -->
         <table id="datatablesSimple">
             <thead>
@@ -70,25 +70,28 @@
                             </td>
                             <td>
                                 <?php if ($assignment['acknowledgment_status'] === 'pending'): ?>
-                                    <!-- Edit Icon -->
-                                    <a href="<?= URL ?>inventoryassignment/edit/<?= $assignment['id']; ?>" 
-                                    class="btn btn-sm btn-outline-primary" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    <div class="d-flex gap-2">
+                                        <!-- Edit Button -->
+                                        <a href="<?= URL ?>inventoryassignment/edit/<?= $assignment['id']; ?>" 
+                                        class="btn btn-sm btn-outline-primary" title="Edit">
+                                            Edit
+                                        </a>
 
-                                    <!-- Delete Icon -->
-                                    <form action="<?= URL; ?>inventoryassignment/delete" method="POST" 
-                                        onsubmit="return confirm('Are you sure you want to delete this assignment?');" 
-                                        style="display:inline;">
-                                        <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']); ?>">
-                                        <button type="submit" name="delete" class="btn btn-sm btn-outline-danger" title="Delete">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
+                                        <!-- Delete Button -->
+                                        <form action="<?= URL; ?>inventoryassignment/delete" method="POST" 
+                                            onsubmit="return confirm('Are you sure you want to delete this assignment?');" 
+                                            style="margin: 0;">
+                                            <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']); ?>">
+                                            <button type="submit" name="delete" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
                                 <?php else: ?>
                                     <span class="text-muted">N/A</span>
                                 <?php endif; ?>
                             </td>
+
 
                         </tr>
                     <?php endforeach; ?>

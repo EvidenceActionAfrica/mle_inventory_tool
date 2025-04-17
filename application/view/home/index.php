@@ -19,7 +19,7 @@ $role = $_SESSION['role'] ?? null;
 
     <?php if($role === 'staff'): ?>
       <div class="card" style="background-color:#05545a;" 
-           onClick="to_url('<?php echo URL . 'inventoryassignment/pending'; ?>')">
+           onClick="to_url('<?php echo URL . 'inventoryreturn'; ?>')">
         <b style="color: #fff; margin-left:3rem; font-family: ArchivoBlack; font-size:20px;">MLE INVENTORY TOOL</b>
       </div>
       <?php endif; ?>

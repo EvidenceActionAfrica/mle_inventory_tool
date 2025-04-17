@@ -105,23 +105,10 @@
                     </select>
                 </div>
 
-                <!-- Location -->
-                <div class="mb-3">
-                    <label class="form-label">Select Location (Office)</label>
-                    <select name="location" class="form-select" required>
-                        <option value="">Choose a location</option>
-                        <?php foreach ($offices as $office): ?>
-                            <option value="<?= htmlspecialchars($office['office_name']); ?>">
-                                <?= htmlspecialchars($office['office_name'] . " - " . $office['location_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
                 <!-- Date Assigned -->
                 <div class="mb-3">
                     <label class="form-label">Date Assigned</label>
-                    <input type="date" name="date_assigned" class="form-control" required>
+                    <input type="date" name="date_assigned" class="form-control" value="<?= date('Y-m-d'); ?>"required>
                 </div>
 
                 <!-- Manager -->
