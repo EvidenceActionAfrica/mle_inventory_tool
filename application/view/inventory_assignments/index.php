@@ -48,6 +48,7 @@
                     <th>Date Assigned</th>
                     <th>Managed By</th>
                     <th>Acknowledgment</th>
+                    <th>Confirmation</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -68,6 +69,7 @@
                                     <?= ucfirst($assignment['acknowledgment_status'] ?? 'Pending'); ?>
                                 </span>
                             </td>
+                            <td><?= htmlspecialchars($assignment['confirmation_date'] ?? 'Not Confirmed'); ?></td>
                             <td>
                                 <?php if ($assignment['acknowledgment_status'] === 'pending'): ?>
                                     <div class="d-flex gap-2">
@@ -91,7 +93,7 @@
                                     <span class="text-muted">N/A</span>
                                 <?php endif; ?>
                             </td>
-
+                            <td></td>
 
                         </tr>
                     <?php endforeach; ?>

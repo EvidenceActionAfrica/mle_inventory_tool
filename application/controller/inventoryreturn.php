@@ -5,26 +5,29 @@ class inventoryreturn extends Controller
 
     public function index() 
     {
-        {
-            session_start();
-        
-            if (!isset($_SESSION['user_email'])) {
-                header("Location: " . URL . "login");
-                exit();
-            }
-        
-            if ($this->model === null) {
-                echo "Model not loaded properly!";
-                exit();
-            }
-        
-            $user_email = $_SESSION['user_email']; 
-            $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
-            require APP . 'view/_templates/sessions.php';
-            require APP . 'view/_templates/header.php';
-            require APP . 'view/inventoryreturns/index.php';
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
         }
+    
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        $user_email = $_SESSION['user_email']; 
+        $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
+    
+
+        require APP . 'view/_templates/sessions.php';
+        require APP . 'view/_templates/header.php';
+    
+        $assignments = $approvedAssignments;
+        require APP . 'view/inventoryreturns/index.php';
     }
+    
 
     public function myreturns()
     {

@@ -20,8 +20,19 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-table me-1"></i></span>
-                <button class="add-btn" onclick="openUserModal()">Add User</button>
+                <div class="d-flex gap-2 align-items-center">
+                    <!-- Re-confirm toggle -->
+                    <div class="form-check form-switch" style="margin-top: 10px;">
+                        <input class="form-check-input" type="checkbox" id="adminToggle" onchange="handleAdminToggle(this)">
+                        <label class="form-check-label" for="adminToggle">RE-CONFIRM</label>
+                    </div>
+                    <!-- Add User button -->
+                    <button class="add-btn" onclick="openUserModal()">Add User</button>
+                </div>
             </div>
+        </div>
+
+
 
             <div class="card-body table-responsive">
                 <?php if (isset($_GET['success'])): ?>
@@ -167,6 +178,26 @@ function openUserModal(id = '', email = '', department = '', position = '', role
     var myModal = new bootstrap.Modal(document.getElementById('userModal'));
     myModal.show();
 }
+// Handle the toggle action for enabling/disabling reconfirmation
+function handleAdminToggle(checkbox) {
+    fetch("<?= URL ?>inventoryassignment/toggleReconfirmStatus", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ enabled: checkbox.checked })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Reconfirm toggle successful.");
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => console.error("Request failed", err));
+}
+
 
 // Initialize DataTable
 window.addEventListener('DOMContentLoaded', () => {

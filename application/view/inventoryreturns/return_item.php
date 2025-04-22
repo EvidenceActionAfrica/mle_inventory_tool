@@ -6,39 +6,89 @@
 <style>
     .wizard-steps-panel {
         position: relative;
-        height: 4em;
+        height: auto;
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
+        padding-top: 10px;
+        padding-bottom: 10px;
     }
+
     .wizard-steps-panel .step-number {
         display: inline-block;
-        font-size: 20px;
-        margin: 0 10px;
+        margin: 0 15px;
+        text-align: center;
     }
+
     .wizard-steps-panel .step-number .number {
         display: inline-block;
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        line-height: 30px;
+        line-height: 40px;
+        font-size: 18px;
         background: #dedede;
         color: #000;
+        font-weight: 500;
+        transition: all 0.3s ease-in-out;
     }
+
     .wizard-steps-panel .doing .number {
         background: #0d6efd;
         color: #fff;
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.4);
     }
+
     .wizard-steps-panel .done .number {
         background: #198754;
         color: #fff;
+        box-shadow: 0 0 10px rgba(25, 135, 84, 0.4);
     }
+
     .wizard-step {
         display: none;
+        padding: 15px 20px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        margin-bottom: 15px;
+        transition: all 0.3s ease-in-out;
     }
+
     .wizard-step.active {
         display: block;
     }
+
+    .wizard-buttons {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 20px;
+        border-top: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+    }
+
+    .wizard-buttons .btn {
+        min-width: 100px;
+    }
+
+    .modal-body.wizard-content {
+        padding: 20px 25px;
+    }
+    .wizard-content .active {
+    color: inherit !important;
+    background: none !important;
+    text-decoration: none !important;
+}
+
+    .wizard-step .form-group {
+        margin-top: 15px;
+    }
+
+    .wizard-step strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
 </style>
+
 
 <main>
     <div class="container-fluid px-4">

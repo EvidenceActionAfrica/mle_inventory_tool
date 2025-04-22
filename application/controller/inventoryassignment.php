@@ -271,7 +271,73 @@ class inventoryassignment extends Controller
         fclose($output);
         exit();
     }
-     
-}
+    
+    //button for admis
+    // Toggle reconfirm_enabled on all inventory_assignment records
+    public function toggleReconfirmStatus()
+    {
+        session_start();
+
+        if ($this->model === null) {
+            echo json_encode(['success' => false, 'message' => 'Model not loaded']);
+            return;
+        }
+
+        // Get JSON input
+        $input = json_decode(file_get_contents("php://input"), true);
+
+        if (!isset($input['enabled'])) {
+            echo json_encode(['success' => false, 'message' => 'Missing enabled flag']);
+            return;
+        }
+
+        $enabled = filter_var($input['enabled'], FILTER_VALIDATE_BOOLEAN);
+
+        // Call the model
+        if ($this->model->updateReconfirmStatusForAll($enabled)) {
+            echo json_encode(['success' => true, 'message' => 'Reconfirm status updated']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update reconfirm status']);
+        }
+    }
+
+    
+    //btns for users to recinfirm
+    public function confirm()
+    {
+        session_start();
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $assignmentId = $_POST['assignment_id'];
+    
+            if ($this->model->confirmAssignment($assignmentId)) {
+                // If all confirmed, disable the toggle
+                if ($this->model->allAssignmentsConfirmed()) {
+                    $this->model->resetReconfirmToggle();
+                }
+    
+                $_SESSION['success'] = "Item confirmed successfully.";
+            } else {
+                $_SESSION['error'] = "Failed to confirm item.";
+            }
+    
+            header("Location: " . URL . "inventoryreturn");
+            exit;
+        }
+    }
+    
+    
+    
+
+}    
 
 ?>

@@ -366,6 +366,8 @@ class Model
                     ia.date_assigned,
                     ia.managed_by,
                     ia.acknowledgment_status,
+                    ia.confirmed,          
+                    ia.confirmation_date,
                     ia.created_at,
                     ia.updated_at
                 FROM inventory_assignment ia
@@ -774,6 +776,9 @@ class Model
                         ia.date_assigned,
                         ia.managed_by,
                         ia.acknowledgment_status,
+                        ia.reconfirm_enabled,  
+                        ia.confirmed,          
+                        ia.confirmation_date,
                         ia.created_at,
                         ia.updated_at
                     FROM inventory_assignment ia
@@ -790,11 +795,12 @@ class Model
                         WHERE ir.status = 'approved' 
                           AND ir.return_date IS NOT NULL
                     )";
-        
+            
             $query = $this->db->prepare($sql);
             $query->execute([':user_email' => $user_email]);
             return $query->fetchAll(PDO::FETCH_ASSOC);
         }
+        
         
             //item returning process...
         //model to show returned item
@@ -1878,6 +1884,53 @@ class Model
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_OBJ);
     }
+
+    //confirming items periodically
+    // 1. Set the admin button to enable or disable reconfirmation
+    public function updateReconfirmStatusForAll($enabled)
+    {
+        $sql = "UPDATE inventory_assignment SET reconfirm_enabled = :enabled";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':enabled' => $enabled ? 1 : 0]);
+    }
+
+    // 2. Add the confirm button for users to mark assignments as confirmed
+    public function confirmAssignment($assignment_id)
+    {
+        // Get the current timestamp for confirmation date
+        $confirmation_date = date('Y-m-d H:i:s');
+
+        // Update the 'confirmed' field and set the confirmation date
+        $sql = "UPDATE inventory_assignment
+                SET confirmed = 1, confirmation_date = :confirmation_date
+                WHERE id = :assignment_id";
+
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':confirmation_date', $confirmation_date);
+        $query->bindParam(':assignment_id', $assignment_id);
+
+        return $query->execute(); // Returns true if the update was successful
+    }
+
+    // 3. Get items not confirmed
+    public function allAssignmentsConfirmed()
+    {
+        $sql = "SELECT COUNT(*) as unconfirmed 
+                FROM inventory_assignment 
+                WHERE reconfirm_enabled = 1 AND confirmed = 0";
+        $stmt = $this->db->query($sql);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['unconfirmed'] == 0;
+    }
+
+    //4.Reset reconfirm_enabled after all confirm
+    public function resetReconfirmToggle()
+    {
+        $sql = "UPDATE inventory_assignment SET reconfirm_enabled = 0";
+        return $this->db->query($sql);
+    }
+
+    
      
 }
 
