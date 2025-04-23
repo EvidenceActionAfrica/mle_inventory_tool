@@ -3,6 +3,7 @@
         <h3 class="mt-4">Dashboard</h3>
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item"><a href="<?php echo URL; ?>home">Home</a></li>
+            <li class="breadcrumb-item">Report</li>
             <li class="breadcrumb-item">Dashboard</li>
         </ol>
 

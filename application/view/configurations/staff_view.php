@@ -8,6 +8,7 @@
 
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item"><a href="<?= URL; ?>home">Home</a></li>
+            <li class="breadcrumb-item">Configurations</li>
             <li class="breadcrumb-item">Users</li>
         </ol>
 
@@ -22,10 +23,31 @@
                 <span><i class="fas fa-table me-1"></i></span>
                 <div class="d-flex gap-2 align-items-center">
                     <!-- Re-confirm toggle -->
+                    <?php
+                    $activeSession = $this->model->getActiveReconfirmationSession();
+                    $canToggle = !$activeSession || ($activeSession['initiated_by'] === $_SESSION['user_email']);
+                    ?>
+
                     <div class="form-check form-switch" style="margin-top: 10px;">
-                        <input class="form-check-input" type="checkbox" id="adminToggle" onchange="handleAdminToggle(this)">
-                        <label class="form-check-label" for="adminToggle">RE-CONFIRM</label>
+                        <form method="POST" action="<?= URL ?>inventoryassignment/toggleReconfirmation">
+                            <input type="hidden" name="enable_reconfirm" value="<?= $activeSession ? '0' : '1' ?>">
+                            <input 
+                                class="form-check-input" 
+                                type="checkbox" 
+                                id="adminToggle" 
+                                <?= $activeSession ? 'checked' : '' ?> 
+                                onchange="this.form.submit();" 
+                                <?= $canToggle ? '' : 'disabled' ?>
+                            >
+                            <label class="form-check-label" for="adminToggle">RE-CONFIRM</label>
+                            <?php if ($activeSession): ?>
+                                <p class="text-muted" style="font-size: small;">
+                                    Session initiated by: <strong><?= $activeSession['initiated_by'] ?></strong> on <?= date('Y-m-d', strtotime($activeSession['start_date'])) ?>
+                                </p>
+                            <?php endif; ?>
+                        </form>
                     </div>
+
                     <!-- Add User button -->
                     <button class="add-btn" onclick="openUserModal()">Add User</button>
                 </div>
@@ -190,7 +212,7 @@ function handleAdminToggle(checkbox) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert("Reconfirm toggle successful.");
+            alert("Confirmation Session Activated.");
         } else {
             alert("Error: " + data.message);
         }

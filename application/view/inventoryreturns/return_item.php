@@ -93,6 +93,11 @@
 <main>
     <div class="container-fluid px-4">
         <h3 class="mt-4">Returned Items</h3>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item"><a href="<?= URL ?>home">Home</a></li>
+            <li class="breadcrumb-item">My Items</li>
+            <li class="breadcrumb-item">Returned Assignments</li>
+        </ol>
         <div class="card mb-4">
             <div class="card-body">
                 This is a list of items you have returned. Those approved and those still pending.

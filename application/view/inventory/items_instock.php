@@ -10,6 +10,7 @@
 
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="<?php echo URL; ?>home">Home</a></li>
+        <li class="breadcrumb-item">Assets</li>
         <li class="breadcrumb-item">Items In Stock</li>
     </ol>
 

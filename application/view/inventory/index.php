@@ -8,9 +8,14 @@
 
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="<?php echo URL; ?>home">Home</a></li>
+        <li class="breadcrumb-item">Configurations</li>
         <li class="breadcrumb-item">Inventory</li>
     </ol>
-    
+    <div class="card mb-4">
+        <div class="card-body">
+            This is a collection of all the assets in the organisation and their details.
+        </div>
+    </div>
     <!-- Success & Error Messages -->
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success"><?= htmlspecialchars($_GET['success']); ?></div>

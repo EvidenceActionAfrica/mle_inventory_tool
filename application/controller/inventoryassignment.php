@@ -274,43 +274,59 @@ class inventoryassignment extends Controller
     
     //button for admis
     // Toggle reconfirm_enabled on all inventory_assignment records
-    public function toggleReconfirmStatus()
+    public function toggleReconfirmation()
     {
         session_start();
-
-        if ($this->model === null) {
-            echo json_encode(['success' => false, 'message' => 'Model not loaded']);
-            return;
-        }
-
-        // Get JSON input
-        $input = json_decode(file_get_contents("php://input"), true);
-
-        if (!isset($input['enabled'])) {
-            echo json_encode(['success' => false, 'message' => 'Missing enabled flag']);
-            return;
-        }
-
-        $enabled = filter_var($input['enabled'], FILTER_VALIDATE_BOOLEAN);
-
-        // Call the model
-        if ($this->model->updateReconfirmStatusForAll($enabled)) {
-            echo json_encode(['success' => true, 'message' => 'Reconfirm status updated']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update reconfirm status']);
-        }
-    }
-
     
-    //btns for users to recinfirm
-    public function confirm()
-    {
-        session_start();
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
-
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        $adminEmail = $_SESSION['user_email'];
+        $enabled = $_POST['enable_reconfirm'] ?? false;
+    
+        // Check for existing active session
+        $activeSession = $this->model->getActiveReconfirmationSession();
+    
+        if ($enabled) {
+            if ($activeSession) {
+                $_SESSION['error'] = "Reconfirmation is already active. Only {$activeSession['initiated_by']} can deactivate it.";
+            } else {
+                $sessionId = $this->model->startNewReconfirmationSession($adminEmail);
+                $this->model->assignSessionToUnconfirmed($sessionId);
+                $_SESSION['success'] = "Reconfirmation session started.";
+            }
+        } else {
+            if (!$activeSession) {
+                $_SESSION['error'] = "No active reconfirmation session.";
+            } elseif ($activeSession['initiated_by'] !== $adminEmail) {
+                $_SESSION['error'] = "Only {$activeSession['initiated_by']} can end this session.";
+            } else {
+                $this->model->deactivateReconfirmationSession($activeSession['id']);
+                $this->model->resetReconfirmToggle();
+                $_SESSION['success'] = "Reconfirmation session ended.";
+            }
+        }
+    
+        header("Location: " . URL . "users/getUsers?");
+        exit;
+    }
+    
+    //btns for users to recinfirm
+    public function confirm() 
+    {
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -318,24 +334,60 @@ class inventoryassignment extends Controller
     
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $assignmentId = $_POST['assignment_id'];
-    
-            if ($this->model->confirmAssignment($assignmentId)) {
-                // If all confirmed, disable the toggle
+        
+            $activeSession = $this->model->getActiveReconfirmationSession();
+        
+            if (!$activeSession) {
+                $_SESSION['error'] = "No active reconfirmation session.";
+                header("Location: " . URL . "inventoryreturn");
+                exit();
+            }
+        
+            if ($this->model->confirmAssignment($assignmentId, $activeSession['id'])) {
+
+                $status = 'confirmed';
+                $confirmedBy = $_SESSION['user_email']; 
+                $this->model->recordConfirmation($assignmentId, $status, $confirmedBy);
+        
+                // Check if all items have been confirmed
                 if ($this->model->allAssignmentsConfirmed()) {
                     $this->model->resetReconfirmToggle();
                 }
-    
+        
                 $_SESSION['success'] = "Item confirmed successfully.";
             } else {
                 $_SESSION['error'] = "Failed to confirm item.";
             }
-    
+        
             header("Location: " . URL . "inventoryreturn");
-            exit;
+            exit();
         }
     }
     
+      
+    //geetting annual reports
+    public function reconfirmationReport()
+    {
+        session_start();
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
     
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        $year = isset($_GET['year']) ? (int)$_GET['year'] : null;
+        $month = isset($_GET['month']) ? (int)$_GET['month'] : null;
+    
+        $reportData = $this->model->getReconfirmationReport($year, $month);
+    
+        require APP . 'view/_templates/sessions.php';
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory_assignments/reconfirmation_report.php';
+    }
     
 
 }    

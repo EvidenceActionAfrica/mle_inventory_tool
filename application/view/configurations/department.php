@@ -8,9 +8,14 @@
 
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="<?= URL; ?>home">Home</a></li>
+        <li class="breadcrumb-item">Admin</li>
         <li class="breadcrumb-item">Departments</li>
     </ol>
-
+    <div class="card mb-4">
+        <div class="card-body">
+            Here is the list of departments and their parental departments.
+        </div>
+    </div>
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
     <?php endif; ?>

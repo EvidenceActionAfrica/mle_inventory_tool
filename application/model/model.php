@@ -384,9 +384,7 @@ class Model
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-        
-    
+      
     //searchbutton
     public function searchAssignments($query) {
         $sql = "SELECT 
@@ -1895,43 +1893,154 @@ class Model
     }
 
     // 2. Add the confirm button for users to mark assignments as confirmed
-    public function confirmAssignment($assignment_id)
+    public function confirmAssignment($assignmentId, $sessionId)
     {
-        // Get the current timestamp for confirmation date
-        $confirmation_date = date('Y-m-d H:i:s');
-
-        // Update the 'confirmed' field and set the confirmation date
-        $sql = "UPDATE inventory_assignment
-                SET confirmed = 1, confirmation_date = :confirmation_date
-                WHERE id = :assignment_id";
-
-        $query = $this->db->prepare($sql);
-        $query->bindParam(':confirmation_date', $confirmation_date);
-        $query->bindParam(':assignment_id', $assignment_id);
-
-        return $query->execute(); // Returns true if the update was successful
+        $sql = "UPDATE inventory_assignment 
+                SET confirmed = 1, 
+                    confirmation_date = NOW(), 
+                    reconfirmation_session_id = :session_id 
+                WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([
+            ':id' => $assignmentId,
+            ':session_id' => $sessionId
+        ]);
     }
-
+    
     // 3. Get items not confirmed
     public function allAssignmentsConfirmed()
     {
-        $sql = "SELECT COUNT(*) as unconfirmed 
+        $sql = "SELECT COUNT(*) AS unconfirmed 
                 FROM inventory_assignment 
                 WHERE reconfirm_enabled = 1 AND confirmed = 0";
-        $stmt = $this->db->query($sql);
+    
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['unconfirmed'] == 0;
+    
+        return isset($result['unconfirmed']) && $result['unconfirmed'] == 0;
     }
-
+    
     //4.Reset reconfirm_enabled after all confirm
     public function resetReconfirmToggle()
     {
-        $sql = "UPDATE inventory_assignment SET reconfirm_enabled = 0";
-        return $this->db->query($sql);
+        $sql = "UPDATE inventory_assignment 
+                SET reconfirm_enabled = 0 
+                WHERE reconfirm_enabled = 1";
+    
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute();
+    }
+    
+    //annual reports
+    public function startNewReconfirmationSession($initiated_by)
+    {
+        $sql = "INSERT INTO reconfirmation_sessions (year, month, initiated_by, start_date, active) 
+                VALUES (:year, :month, :initiated_by, :start_date, 1)";
+    
+        $stmt = $this->db->prepare($sql);
+    
+        return $stmt->execute([
+            ':year' => date('Y'),
+            ':month' => date('m'),
+            ':initiated_by' => $initiated_by,
+            ':start_date' => date('Y-m-d'),
+        ]);
+    }
+    
+    public function getActiveReconfirmationSession() {
+        $sql = "SELECT * 
+                FROM reconfirmation_sessions 
+                WHERE active = 1 
+                ORDER BY id DESC 
+                LIMIT 1";
+    
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        
+        return $result ? $result : null;
+    }
+    
+    public function deactivateReconfirmationSession($sessionId)
+    {
+        $sql = "UPDATE reconfirmation_sessions SET active = 0 WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':id' => $sessionId]);
     }
 
+    public function assignSessionToUnconfirmed($session_id)
+    {
+        $sql = "UPDATE inventory_assignment 
+                SET reconfirm_enabled = 1, confirmed = 0, confirmation_date = NULL, reconfirmation_session_id = :session_id 
+                WHERE reconfirm_enabled = 0"; 
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([':session_id' => $session_id]);
+    }
     
-     
+    //recording each confirmation
+    public function recordConfirmation($inventoryAssignmentId, $status, $confirmedBy)
+    {
+        $sql = "INSERT INTO confirmation_log (inventory_assignment_id, confirmation_date, confirmed_by, status)
+                VALUES (:inventory_assignment_id, DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i'), :confirmed_by, :status)";
+    
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':inventory_assignment_id' => $inventoryAssignmentId, 
+            ':confirmed_by' => $confirmedBy, 
+            ':status' => $status 
+        ]);
+    }
+    
+    //getting all reports
+    public function getReconfirmationReport($year = null, $month = null)
+        {
+            $sql = "SELECT 
+                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
+                    LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS name, 
+                    ia.email,
+                    p.position_name AS position,  
+                    d.department_name AS department,
+                    ia.serial_number,
+                    ia.tag_number,
+                    i.description AS item,
+                    ia.managed_by,
+                    ia.date_assigned,
+                    ia.confirmation_date,
+                    rs.year,
+                    rs.month,
+                    cl.confirmation_date AS log_confirmation_date,
+                    cl.confirmed_by,
+                    cl.status AS confirmation_status
+                FROM inventory_assignment ia
+                JOIN reconfirmation_sessions rs ON ia.reconfirmation_session_id = rs.id
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN confirmation_log cl ON ia.id = cl.inventory_assignment_id
+                LEFT JOIN staff_login sl ON ia.email = sl.email  
+                LEFT JOIN positions p ON sl.position = p.id 
+                LEFT JOIN departments d ON sl.department = d.id  
+                WHERE ia.confirmed = 1";
+        
+            $params = [];
+        
+            if ($year !== null) {
+                $sql .= " AND rs.year = :year";
+                $params[':year'] = $year;
+            }
+        
+            if ($month !== null) {
+                $sql .= " AND rs.month = :month";
+                $params[':month'] = $month;
+            }
+        
+            $sql .= " ORDER BY ia.confirmation_date DESC";
+        
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+        
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+          
 }
 
 

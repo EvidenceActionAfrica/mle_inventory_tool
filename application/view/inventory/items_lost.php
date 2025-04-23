@@ -9,6 +9,7 @@
 
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="<?= URL ?>home">Home</a></li>
+        <li class="breadcrumb-item">Collections</li>
         <li class="breadcrumb-item">Lost Items</li>
     </ol>
 

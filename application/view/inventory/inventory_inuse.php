@@ -10,6 +10,7 @@
 
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item"><a href="<?= URL ?>home">Home</a></li>
+            <li class="breadcrumb-item">Assets</li>
             <li class="breadcrumb-item">Items In Use</li>
         </ol>
 

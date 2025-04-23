@@ -9,9 +9,14 @@
 
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="<?= URL ?>home">Home</a></li>
+        <li class="breadcrumb-item">Collections</li>
         <li class="breadcrumb-item">Disposed Items</li>
     </ol>
-
+    <div class="card mb-4">
+        <div class="card-body">
+            This is a combination of lost items and irrepairable items.
+        </div>
+    </div>
     <!-- Alert Messages -->
     <?php if (isset($_GET['success'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">

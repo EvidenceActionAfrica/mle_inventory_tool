@@ -202,6 +202,9 @@ function isActive($page, $current_page)
                         <a href="<?php echo URL; ?>dashboard"
                            class="dropdown-item <?php echo isActive('dashboard', $current_page); ?>">Staff
                             Dashboard</a>
+                            <a href="<?php echo URL; ?>inventoryassignment/reconfirmationReport"
+                           class="dropdown-item <?php echo isActive('reconfirmationReport', $current_page); ?>">Confirmation
+                            Reports</a>
                     </div>
                 </div>
             <?php endif; ?>

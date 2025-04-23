@@ -1,11 +1,11 @@
 <link href="<?= URL ?>css/tables.css" rel="stylesheet">
-
 <main>
     <div class="container-fluid px-4">
         <h3 class="mt-4">Assigned Items</h3>
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item"><a href="<?= URL ?>home">Home</a></li>
-            <li class="breadcrumb-item">Assignments</li>
+            <li class="breadcrumb-item">My Items</li>
+            <li class="breadcrumb-item">Assigned Assignments</li>
         </ol>
         <div class="card mb-4">
             <div class="card-body">
@@ -16,7 +16,7 @@
         <!-- Approved Assignments -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="fas fa-check-circle me-1"></i> Your Approved Assignments
+                <i class="fas fa-check-circle me-1"></i> 
             </div>
             <div class="card-body table-responsive">
                 <!-- Success & Error Messages -->
@@ -48,26 +48,32 @@
                                     <td><?= htmlspecialchars($assignment['date_assigned'] ?? 'N/A'); ?></td>
                                     <td><?= htmlspecialchars($assignment['managed_by'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <?php
-                                            $enabled = isset($assignment['reconfirm_enabled']) ? $assignment['reconfirm_enabled'] : 0;
-                                            $confirmed = isset($assignment['confirmed']) ? $assignment['confirmed'] : 0;
-                                            $confirmationDate = $assignment['confirmation_date'] ?? null;
-                                        ?>
+                                    <?php
+                                        $enabled = isset($assignment['reconfirm_enabled']) ? (int)$assignment['reconfirm_enabled'] : 0;
+                                        $confirmed = isset($assignment['confirmed']) ? (int)$assignment['confirmed'] : 0;
+                                        $confirmationDate = $assignment['confirmation_date'] ?? null;
 
-                                        <?php if ($enabled == 1 && $confirmed == 0): ?>
-                                            <form method="POST" action="<?= URL ?>inventoryassignment/confirm">
-                                                <input type="hidden" name="assignment_id" value="<?= $assignment['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-success">Confirm</button>
-                                            </form>
-                                        <?php elseif ($confirmed == 1): ?>
-                                            <span class="text-success">Confirmed</span><br>
-                                            <?php if (!empty($confirmationDate)): ?>
-                                                <small>Last Confirmed on: <?= date('Y-m-d H:i:s', strtotime($confirmationDate)) ?></small>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <button class="btn btn-sm btn-secondary" disabled>Confirm</button>
+                                        // Check if there's an active reconfirmation session
+                                        $activeSession = $this->model->getActiveReconfirmationSession();
+                                        $sessionActive = !empty($activeSession) && $activeSession['active'] == 1;
+                                    ?>
+
+                                    <?php if ($confirmed === 1): ?>
+                                        <span class="text-success">Confirmed</span><br>
+                                        <?php if (!empty($confirmationDate)): ?>
+                                            <small>Last Confirmed on: <?= htmlspecialchars(date('Y-m-d', strtotime($confirmationDate))) ?></small>
                                         <?php endif; ?>
-                                    </td>
+                                    
+                                    <?php elseif ($sessionActive && $enabled === 1): ?>
+                                        <form method="POST" action="<?= URL ?>inventoryassignment/confirm">
+                                            <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']) ?>">
+                                            <button type="submit" class="btn btn-sm btn-success">Confirm</button>
+                                        </form>
+                                    
+                                    <?php else: ?>
+                                        <button class="btn btn-sm btn-secondary" disabled>Confirm</button>
+                                    <?php endif; ?>
+                                </td>
 
                                 </tr>
                             <?php endforeach; ?>
