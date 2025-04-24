@@ -75,7 +75,7 @@
                 <!-- Dynamic Item Fields -->
                 <div id="item-container">
                     <div class="row g-3 align-items-end item-group mb-3">
-                        <div class="col-md-10">
+                    <div class="mb-3">
                             <label class="form-label">Select Item</label>
                             <select name="inventory_id[]" class="form-select" required>
                                 <option value="">Choose an item</option>
