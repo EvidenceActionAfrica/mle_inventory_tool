@@ -115,13 +115,22 @@ $role = $_SESSION['role'] ?? null;
 </head>
 
 <?php
-$current_page = basename($_SERVER['REQUEST_URI']);
+$uri = $_SERVER['REQUEST_URI'];
+$uri = strtok($uri, '?'); 
+$current_page = trim(basename($uri), '/');
 
-function isActive($page, $current_page)
-{
-    return $current_page === $page ? 'active' : '';
+function isActive($pages, $current_page) {
+    if (is_array($pages)) {
+        return in_array($current_page, $pages) ? 'active' : '';
+    }
+    return $current_page === $pages ? 'active' : '';
+}
+
+function isDropdownActive($pages, $current_page) {
+    return in_array($current_page, $pages) ? 'show' : '';
 }
 ?>
+
 
 <div class="top-nav navbar navbar-expand-lg navbar-light px-3" style="background-color: #d5f4f7;">
     <a href="<?php echo URL; ?>home" class="navbar-brand">
@@ -136,7 +145,7 @@ function isActive($page, $current_page)
         <div class="navbar-nav mx-auto d-flex align-items-center gap-3">
             <?php if ($role === 'admin' || $role === 'staff' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('inventoryreturn', $current_page); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['inventoryreturn', 'myreturns'], $current_page); ?>"
                        href="#" data-bs-toggle="dropdown">MY ITEMS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryreturn"
@@ -160,7 +169,7 @@ function isActive($page, $current_page)
 
             <?php if ($role === 'admin' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('unassignedItems', $current_page); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['unassignedItems', 'assignedItems'], $current_page); ?>"
                        href="#" data-bs-toggle="dropdown">ASSETS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryreturn/unassignedItems"
@@ -173,7 +182,7 @@ function isActive($page, $current_page)
 
             <?php if ($role === 'admin' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('approve', $current_page); ?>" href="#"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['approve', 'lostItems','damagedItems','disposedItems'], $current_page); ?>" href="#"
                        data-bs-toggle="dropdown">COLLECTIONS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryreturn/approve"
@@ -190,7 +199,7 @@ function isActive($page, $current_page)
 
             <?php if ($role === 'admin' || $role === 'staff' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('staffassignments', $current_page); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['staffassignments', 'staffreturneditems','dashboard','reconfirmationReport'], $current_page); ?>"
                        href="#" data-bs-toggle="dropdown">REPORTS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryassignment/staffassignments"
@@ -211,7 +220,7 @@ function isActive($page, $current_page)
 
             <?php if ($role === 'admin' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('inventory', $current_page); ?>" href="#"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['inventory', 'getCategory','getUsers'], $current_page); ?>" href="#"
                        data-bs-toggle="dropdown">CONFIGURATIONS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventory"
@@ -226,7 +235,7 @@ function isActive($page, $current_page)
 
             <?php if ($role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive('getPositions', $current_page); ?>" href="#"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['getPositions', 'getDepartments','getOffices','getLocations'], $current_page); ?>" href="#"
                        data-bs-toggle="dropdown">ADMIN</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>positions/getPositions"
