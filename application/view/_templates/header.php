@@ -182,7 +182,7 @@ function isDropdownActive($pages, $current_page) {
 
             <?php if ($role === 'admin' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive(['approve', 'lostItems','damagedItems','disposedItems'], $current_page); ?>" href="#"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['approve', 'lostItems','damagedItems','disposedItems','disapprovedItems'], $current_page); ?>" href="#"
                        data-bs-toggle="dropdown">COLLECTIONS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryreturn/approve"
@@ -193,6 +193,8 @@ function isDropdownActive($pages, $current_page) {
                            class="dropdown-item <?php echo isActive('damagedItems', $current_page); ?>">Repairs</a>
                         <a href="<?php echo URL; ?>inventoryreturn/disposedItems"
                            class="dropdown-item <?php echo isActive('disposedItems', $current_page); ?>">Disposed</a>
+                           <a href="<?php echo URL; ?>inventoryreturn/disapprovedItems"
+                           class="dropdown-item <?php echo isActive('disapprovedItems', $current_page); ?>">Disapproved</a>
                     </div>
                 </div>
             <?php endif; ?>

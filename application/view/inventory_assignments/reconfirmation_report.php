@@ -81,15 +81,15 @@
                 <tbody>
                     <?php foreach ($reportData as $row): ?>
                         <tr>
-                            <td><?= htmlspecialchars($row['name']); ?></td>
-                            <td><?= htmlspecialchars($row['email']); ?></td>
-                            <td><?= htmlspecialchars($row['position'] . ' - ' . $row['department']); ?></td>
-                            <td><?= htmlspecialchars($row['item']); ?></td>
-                            <td><?= htmlspecialchars($row['serial_number']); ?></td>
-                            <td><?= htmlspecialchars($row['tag_number']); ?></td>
-                            <td><?= htmlspecialchars($row['managed_by']); ?></td>
-                            <td><?= htmlspecialchars($row['date_assigned']); ?></td>
-                            <td><?= htmlspecialchars($row['log_confirmation_date']); ?></td>
+                        <td><?= htmlspecialchars($row['name'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['email'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars(($row['position'] ?? '') . ' - ' . ($row['department'] ?? '')); ?></td>
+                        <td><?= htmlspecialchars($row['item'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['serial_number'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['tag_number'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['managed_by'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['date_assigned'] ?? ''); ?></td>
+                        <td><?= htmlspecialchars($row['log_confirmation_date'] ?? ''); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

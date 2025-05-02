@@ -52,43 +52,44 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($damagedItems)): ?>
-                        <?php foreach ($damagedItems as $item) : ?>
-                            <tr>
-                                <td><?= htmlspecialchars($item['category']) ?></td>
-                                <td><?= htmlspecialchars($item['description']) ?></td>
-                                <td><?= htmlspecialchars($item['serial_number']) ?></td>
-                                <td><?= htmlspecialchars($item['tag_number']) ?></td>
-                                <td>
-                                    <?php if ($item['repair_status']): ?>
-                                        <?= htmlspecialchars($item['repair_status']) ?>
-                                    <?php else: ?>
-                                        <span class="text-warning">Pending</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if (empty($item['repair_status'])): ?>
-                                        <form method="POST" action="<?= URL ?>inventoryreturn/updateRepairStatus" class="d-flex flex-column">
-                                            <input type="hidden" name="item_id" value="<?= htmlspecialchars($item['item_id']); ?>">
-                                            <select name="repair_status" class="form-select form-select-sm mb-1" required>
-                                                <option value="">Select</option>
-                                                <option value="Repairable">Repaired</option>
-                                                <option value="Unrepairable">Unrepairable</option>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-primary">Update</button>
-                                        </form>
-                                    <?php else: ?>
-                                        <span class="text-muted">Updated</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
+                <?php if (!empty($damagedItems)): ?>
+                    <?php foreach ($damagedItems as $item) : ?>
                         <tr>
-                            <td colspan="6" class="text-center">No damaged items found.</td>
+                            <td><?= htmlspecialchars($item['category']) ?></td>
+                            <td><?= htmlspecialchars($item['description']) ?></td>
+                            <td><?= htmlspecialchars($item['serial_number']) ?></td>
+                            <td><?= htmlspecialchars($item['tag_number']) ?></td>
+                            <td>
+                                <?php if ($item['repair_status']): ?>
+                                    <?= htmlspecialchars($item['repair_status']) ?>
+                                <?php else: ?>
+                                    <span class="text-warning">Pending</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (empty($item['repair_status'])): ?>
+                                    <form method="POST" action="<?= URL ?>inventoryreturn/updateRepairStatus" class="d-flex flex-column">
+                                        <input type="hidden" name="item_id" value="<?= htmlspecialchars($item['item_id']); ?>">
+                                        <select name="repair_status" class="form-select form-select-sm mb-1" required>
+                                            <option value="">Select</option>
+                                            <option value="Repairable">Repaired</option>
+                                            <option value="Unrepairable">Retired</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="text-muted">Updated</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="6" class="text-center">No damaged items found.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+
             </table>
         </div>
     </div>

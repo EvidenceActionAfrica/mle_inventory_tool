@@ -5,23 +5,29 @@ class Inventory extends Controller
     // Fetch all inventory items
     public function index()
     {
-        if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
-        }
         session_start();
     
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = !empty($search_query) ? $this->model->searchItems($search_query) : $this->model->getItems();
-
+    
+        // Fetch users and managers for dropdowns
+        $users = $this->model->getAllUsers();  
+        $managers = $this->model->getManagers();  
+    
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/index.php';
     }
+    
 
     // Add a new item
     public function add()
@@ -137,6 +143,37 @@ class Inventory extends Controller
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/index.php';
+    }
+
+    //single item assigning
+    public function assignSingle()
+    {
+        
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+    
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $user_id = intval($_POST['user_id']);
+            $item_id = intval($_POST['item_id']); 
+            $date_assigned = $_POST['date_assigned'];
+            $manager_email = $_POST['manager_email'];
+
+            $result = $this->model->assignSingleItem($user_id, $item_id, $date_assigned, $manager_email);
+
+            if (strpos($result, 'successfully') !== false) {
+                header("Location: " . URL . "inventory/index?success=" . urlencode($result));
+            } else {
+                header("Location: " . URL . "inventory/index?error=" . urlencode($result));
+            }
+            exit();
+        }
     }
 
 

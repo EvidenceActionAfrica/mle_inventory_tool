@@ -562,6 +562,96 @@ class Model
 
         return "Items successfully assigned!";
     }
+
+    //add single assignment
+    public function assignSingleItem($user_id, $item_id, $date_assigned, $manager_email)
+    {
+        $created = date('Y-m-d H:i:s');
+        
+        // Get manager email
+        $manager = $this->getManagerEmail($manager_email);
+        if (!$manager) {
+            return "Invalid manager email: " . htmlspecialchars($manager_email);
+        }
+        $managed_by = strtok($manager['email'], '@');
+        
+        // Get user information
+        $userSql = "SELECT 
+                        email AS name,
+                        email,
+                        CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role
+                    FROM staff_login
+                    WHERE id = :user_id";
+    
+        $userQuery = $this->db->prepare($userSql);
+        $userQuery->execute([':user_id' => $user_id]);
+        $user = $userQuery->fetch(PDO::FETCH_ASSOC);
+    
+        if (!$user) {
+            return "User not found.";
+        }
+    
+        // Get item information
+        $itemSql = "SELECT serial_number, tag_number FROM inventory WHERE id = :item_id";
+        $itemQuery = $this->db->prepare($itemSql);
+        $itemQuery->execute([':item_id' => $item_id]);
+        $item = $itemQuery->fetch(PDO::FETCH_ASSOC);
+    
+        if (!$item) {
+            return "Item with ID $item_id not found in inventory.";
+        }
+    
+        // Check if item is already assigned
+        $checkSql = "SELECT COUNT(*) FROM inventory_assignment 
+                    WHERE item = :item_id AND acknowledgment_status IN ('pending', 'approved')";
+        $checkQuery = $this->db->prepare($checkSql);
+        $checkQuery->execute([':item_id' => $item_id]);
+        if ($checkQuery->fetchColumn() > 0) {
+            return "Item with ID $item_id is already assigned.";
+        }
+    
+        // Insert assignment into inventory_assignment table
+        try {
+            $sql = "INSERT INTO inventory_assignment 
+                        (name, email, role, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
+                    VALUES 
+                        (:name, :email, :role, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
+            
+            $query = $this->db->prepare($sql);
+            $parameters = [
+                ':name' => $user['name'],
+                ':email' => $user['email'],
+                ':role' => $user['role'],
+                ':item_id' => $item_id,
+                ':serial_number' => $item['serial_number'],
+                ':tag_number' => $item['tag_number'],
+                ':managed_by' => $managed_by,
+                ':date_assigned' => $date_assigned
+            ];
+    
+            $success = $query->execute($parameters);
+    
+            if ($success) {
+                return "Item assigned successfully!";
+            } else {
+                $error = $query->errorInfo();
+                return "Assignment failed: " . implode(" | ", $error);
+            }
+        } catch (PDOException $e) {
+            return "DB Error: " . $e->getMessage();
+        }
+    }
+    
+    
+    //get manageers
+    public function getManagers()
+    {
+        $sql = "SELECT email FROM staff_login";
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     //get assignment by id
     public function getAssignmentById($assignment_id)
     {
@@ -798,24 +888,34 @@ class Model
             $query->execute([':user_email' => $user_email]);
             return $query->fetchAll(PDO::FETCH_ASSOC);
         }
-        
-        
+          
             //item returning process...
         //model to show returned item
         public function getReturnedItems($returned_by)
         {
             try {
-                $sql = "SELECT ir.id, i.description, i.serial_number, 
-                               SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
-                               ir.return_date, ir.status, 
-                               SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
+                $sql = "SELECT ir.id, 
+                                i.description, 
+                                i.serial_number, 
+                                SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
+                                ir.return_date, 
+                                ir.status, 
+                                ir.item_state, 
+                                ir.approved_by, 
+                                ir.approved_date,
+                                ir.repair_status, 
+                                ir.disapproval_comment, 
+                                SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name,
+                                ir.created_at, 
+                                ir.updated_at
                         FROM inventory_returned ir
                         INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
                         INNER JOIN inventory i ON ia.item = i.id 
                         INNER JOIN staff_login sl ON ir.returned_by = sl.email
                         INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
-                        WHERE ir.returned_by = :returned_by";
-        
+                        WHERE ir.returned_by = :returned_by
+                        ORDER BY ir.return_date ASC";  // Sort by return_date ascending
+                
                 $query = $this->db->prepare($sql);
                 $query->execute([ ':returned_by' => $returned_by ]);
         
@@ -826,6 +926,7 @@ class Model
                 die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
             }
         }
+        
            //delete returned items that are not approve
         public function deleteReturn($id)
            {
@@ -877,36 +978,26 @@ class Model
     }
     
     //returning items
-    public function recordReturn($assignment_id, $returned_by, $receiver_id, $return_date)
+    public function recordReturn($assignment_id, $returned_by_email, $receiver_id, $return_date)
     {
         try {
-            // Debugging output
-            echo "Recording return for Assignment ID: $assignment_id, Return Date: $return_date, Receiver ID: $receiver_id, Returned By: $returned_by<br>";
-
-            // SQL Insert for item return
-            $sql = "INSERT INTO inventory_returned (assignment_id, returned_by, receiver_id, return_date, status)
-                    VALUES (:assignment_id, :returned_by, :receiver_id, :return_date, 'pending')";
-
-            $query = $this->db->prepare($sql);
-            $result = $query->execute([
+            $sql = "INSERT INTO inventory_returned 
+                        (assignment_id, returned_by, receiver_id, return_date, status, created_at, updated_at) 
+                    VALUES 
+                        (:assignment_id, :returned_by, :receiver_id, :return_date, 'pending', NOW(), NOW())";
+            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
                 ':assignment_id' => $assignment_id,
-                ':returned_by' => $returned_by,
+                ':returned_by' => $returned_by_email,
                 ':receiver_id' => $receiver_id,
                 ':return_date' => $return_date
             ]);
-
-            if (!$result) {
-                echo "<br><strong>Database Error:</strong> " . implode(" | ", $query->errorInfo()) . "<br>";
-                exit();
-            } else {
-                echo "<br><strong>Success:</strong> Item(s) returned under Assignment ID: $assignment_id!";
-            }
-
-            return $result;
         } catch (PDOException $e) {
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
+    
  
     public function getItemReturnStatus($assignment_id, $item_id)
     {
@@ -948,29 +1039,45 @@ class Model
     }
      
     // Approve the returned item
-    public function approveReturn($return_id, $item_state, $approved_by) {
+    public function approveReturn($return_id, $item_state, $approved_by, $disapproval_comment = null) {
         try {
-            $sql = "UPDATE inventory_returned 
-                    SET status = 'approved', 
-                        item_state = :item_state, 
-                        approved_by = :approved_by, 
-                        approved_date = NOW(), 
-                        updated_at = NOW()
-                    WHERE id = :return_id";
-    
-            $query = $this->db->prepare($sql);
-            $query->execute([
-                ':item_state'  => $item_state,
-                ':approved_by' => $approved_by,
-                ':return_id'   => $return_id
-            ]);
+            if ($item_state === 'disapproved') {
+                $sql = "UPDATE inventory_returned 
+                        SET status = 'disapproved', 
+                            item_state = 'disapproved',
+                            approved_by = :approved_by,
+                            approved_date = NOW(),
+                            disapproval_comment = :disapproval_comment,
+                            updated_at = NOW()
+                        WHERE id = :return_id";
+                $query = $this->db->prepare($sql);
+                $query->execute([
+                    ':approved_by' => $approved_by,
+                    ':disapproval_comment' => $disapproval_comment,
+                    ':return_id' => $return_id
+                ]);
+            } else {
+                $sql = "UPDATE inventory_returned 
+                        SET status = 'approved', 
+                            item_state = :item_state, 
+                            approved_by = :approved_by,
+                            approved_date = NOW(),
+                            updated_at = NOW()
+                        WHERE id = :return_id";
+                $query = $this->db->prepare($sql);
+                $query->execute([
+                    ':item_state' => $item_state,
+                    ':approved_by' => $approved_by,
+                    ':return_id' => $return_id
+                ]);
+            }
     
             return true;
         } catch (PDOException $e) {
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
-     
+        
     public function getUserIdByEmail($email)
     {
         $sql = "SELECT id FROM staff_login WHERE email = :email LIMIT 1";
@@ -1088,9 +1195,33 @@ class Model
         }
     }
 
+    //dissapproved items
+    public function getDisapprovedItems()
+    {
+        $sql = "SELECT 
+                    ia.item AS item_id, 
+                    i.description, 
+                    i.serial_number, 
+                    i.tag_number, 
+                    c.category,
+                    ir.disapproval_comment,
+                    ir.return_date AS disapproved_date
+                FROM inventory_returned ir
+                JOIN inventory_assignment ia ON ir.assignment_id = ia.id
+                JOIN inventory i ON ia.item = i.id
+                JOIN categories c ON i.category_id = c.id
+                WHERE ir.item_state = 'disapproved'
+                ORDER BY ir.return_date DESC";
+        
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     //approving ststus of damaged items
     public function updateRepairStatus($item_id, $repair_status)
     {
+        // Step 1: Get assignment_id from inventory_assignment
         $query = "SELECT id FROM inventory_assignment WHERE item = :item_id";
         $stmt = $this->db->prepare($query);
         $stmt->execute([':item_id' => $item_id]);
@@ -1101,22 +1232,47 @@ class Model
         }
     
         $assignment_id = $assignment['id'];
-
+        echo "DEBUG: Found assignment_id = $assignment_id<br>";
+    
+        // Step 2: Check if inventory_returned record exists
+        $check = $this->db->prepare("SELECT id FROM inventory_returned WHERE assignment_id = :assignment_id");
+        $check->execute([':assignment_id' => $assignment_id]);
+        $returnRecord = $check->fetch(PDO::FETCH_ASSOC);
+    
+        if (!$returnRecord) {
+            // Optional: Insert a record if missing
+            $insert = $this->db->prepare("INSERT INTO inventory_returned (assignment_id, repair_status, created_at) VALUES (:assignment_id, :repair_status, NOW())");
+            $inserted = $insert->execute([
+                ':assignment_id' => $assignment_id,
+                ':repair_status' => $repair_status
+            ]);
+    
+            if ($inserted) {
+                echo "DEBUG: Inserted new inventory_returned record with repair_status = $repair_status.";
+                return true;
+            } else {
+                die("DEBUG: Failed to insert new return record.");
+            }
+        }
+    
+        // Step 3: Update if record exists
         $sql = "UPDATE inventory_returned SET repair_status = :repair_status WHERE assignment_id = :assignment_id";
         $stmt = $this->db->prepare($sql);
-        
         $success = $stmt->execute([
             ':repair_status' => $repair_status,
             ':assignment_id' => $assignment_id
         ]);
     
-        if (!$success) {
-            die("DEBUG: Update query failed.");
+        echo "DEBUG: Rows affected: " . $stmt->rowCount();
+    
+        if (!$success || $stmt->rowCount() === 0) {
+            die("DEBUG: Update query failed or no rows affected.");
         }
     
         echo "DEBUG: Repair status updated successfully for assignment_id = $assignment_id!";
         return true;
     }
+    
     
     public function getAssignedItems()
     {

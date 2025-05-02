@@ -3,32 +3,26 @@
 class inventoryreturn extends Controller
 {
 
-    public function index() 
+    public function index()
     {
         session_start();
-    
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
-    
         if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
+            die("Model not loaded properly!");
         }
-    
-        $user_email = $_SESSION['user_email']; 
+
+        $user_email = $_SESSION['user_email'];
         $approvedAssignments = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
-    
+        $receivers = $this->model->getReceivers();
 
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
-    
-        $assignments = $approvedAssignments;
         require APP . 'view/inventoryreturns/index.php';
     }
     
-
     public function myreturns()
     {
         session_start();
@@ -79,66 +73,50 @@ class inventoryreturn extends Controller
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/inventoryreturns/return_item.php';
     }
-    
-    
+      
     public function add()
     {
         session_start();
-    
+        if (!isset($_SESSION['user_email'])) {
+            die("User not logged in!");
+        }
         if ($this->model === null) {
             die("Model not loaded properly!");
         }
     
-        if (!isset($_SESSION['user_email'])) {
-            die("User not logged in!");
-        }
-    
         $user_email = $_SESSION['user_email'];
-        $returned_by = strstr($user_email, '@', true);
+        $returned_by = $user_email; 
     
-        $items = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
-        $receivers = $this->model->getReceivers();
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            $items = $this->model->getApprovedAssignmentsByLoggedInUser($user_email);
+            $receivers = $this->model->getReceivers();
     
-        if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventoryreturns/return_item_form.php';
             exit();
         }
     
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            echo "POST request received! Processing form submission...<br>";
-        
-            // Ensure `assignment_ids[]` is passed correctly
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $assignment_ids = $_POST['assignment_ids'] ?? [];
-            $return_date = $_POST['return_date'] ?? date('Y-m-d H:i:s');  // Fallback to current date if not provided
+            $return_date = $_POST['return_date'] ?? date('Y-m-d H:i:s');
             $receiver_id = $_POST['receiver_id'] ?? null;
-            $returned_by = $_SESSION['user_email']; // or another logic to set who is returning the item
-        
+    
             if (empty($assignment_ids)) {
-                die("No Assignment IDs selected!");
+                $_SESSION['error'] = "No items selected for return!";
+                header("Location: " . URL . "inventoryreturn");
+                exit();
             }
-        
-            echo "Processing " . count($assignment_ids) . " item(s)...<br>";
-        
-            // Loop through each selected assignment_id
+    
             foreach ($assignment_ids as $assignment_id) {
-                echo "Processing Assignment ID: $assignment_id<br>"; // Debugging to ensure assignment_id is passed
-        
-                // Call the model method to record the return for each assignment
-                $result = $this->model->recordReturn($assignment_id, $returned_by, $receiver_id, $return_date);
-        
-                if (!$result) {
-                    echo "Failed to return Assignment ID: $assignment_id <br>";
-                } else {
-                    echo "Successfully returned Assignment ID: $assignment_id<br>";
-                }
+                $this->model->recordReturn($assignment_id, $returned_by, $receiver_id, $return_date);
             }
-        
-            // Redirect after processing
-            header("Location: " . URL . "inventoryreturn/myreturns?success=Items returned successfully!");
+    
+            $_SESSION['success'] = "Items returned successfully!";
+            header("Location: " . URL . "inventoryreturn");
             exit();
         }
-    }        
+    }
+          
     public function delete()
     {
         session_start();
@@ -205,10 +183,11 @@ class inventoryreturn extends Controller
     public function approveReturn() {
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
             session_start();
-
+    
             if (!isset($_SESSION['user_email'])) {
                 die("Unauthorized access.");
             }
+    
             if ($this->model === null) {
                 echo "Model not loaded properly!";
                 exit();
@@ -216,19 +195,22 @@ class inventoryreturn extends Controller
     
             $return_id  = $_POST['return_id'];
             $item_state = $_POST['item_state'];
-            $approved_by = $_SESSION['user_id']; 
+            $approved_by = $_SESSION['user_id'];
+            $disapproval_comment = null;
     
-            if ($this->model->approveReturn($return_id, $item_state, $approved_by)) {
+            // Only get the comment if the item is being disapproved
+            if ($item_state === 'disapproved') {
+                $disapproval_comment = $_POST['disapproval_comment'] ?? null;
+            }
+    
+            if ($this->model->approveReturn($return_id, $item_state, $approved_by, $disapproval_comment)) {
                 $_SESSION['success'] = "Item return approved successfully!";
-
+    
                 if ($item_state === 'lost') {
-
                     header("Location: " . URL . "inventoryreturn/lostItems");
                 } elseif ($item_state === 'damaged') {
-
                     header("Location: " . URL . "inventoryreturn/damagedItems");
-                } else { 
-
+                } else {
                     header("Location: " . URL . "inventoryreturn/unassignedItems");
                 }
                 exit;
@@ -239,6 +221,7 @@ class inventoryreturn extends Controller
             }
         }
     }
+    
         
     //item classifications....
     public function lostItems() 
@@ -292,11 +275,16 @@ class inventoryreturn extends Controller
             header("Location: " . URL . "login");
             exit();
         }
+    
+        // Fetch damaged items from the model
         $damagedItems = $this->model->getDamagedItems();
+    
+        // Pass the damagedItems to the view
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_damaged.php';
     }
+    
     //search damaged items
     public function searchDamagedItems()
     {
@@ -478,6 +466,27 @@ class inventoryreturn extends Controller
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_disposed.php'; 
     }
+
+    //disapproved items]
+    public function disapprovedItems()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+        session_start();
+
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+
+        $disapprovedItems = $this->model->getDisapprovedItems();
+        require APP . 'view/_templates/sessions.php';
+        require APP . 'view/_templates/header.php';
+        require APP . 'view/inventory/items_disapproved.php';
+    }
+
     
     //managers reports
     //returned items for staff

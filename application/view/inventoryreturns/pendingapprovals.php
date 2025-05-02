@@ -45,15 +45,23 @@
                                 <td>
                                     <form method="POST" action="<?= URL ?>inventoryreturn/approveReturn" class="d-flex flex-column gap-2">
                                         <input type="hidden" name="return_id" value="<?= $return['id'] ?>">
-                                        <select name="item_state" class="form-select form-select-sm" required>
+
+                                        <select name="item_state" class="form-select form-select-sm item-state-selector" required>
                                             <option value="">Select State</option>
                                             <option value="functional">Functional</option>
                                             <option value="damaged">Damaged</option>
                                             <option value="lost">Lost</option>
+                                            <option value="disapproved">Disapproved</option>
                                         </select>
-                                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+
+                                        <!-- This will show when "Disapproved" is selected -->
+                                        <textarea name="disapproval_comment" class="form-control form-control-sm mt-2 disapproval-comment" placeholder="Enter disapproval reason..." style="display:none;" required></textarea>
+
+                                        <button type="submit" class="btn btn-success btn-sm">Submit</button>
                                     </form>
                                 </td>
+
+
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -77,4 +85,22 @@
             new simpleDatatables.DataTable(table);
         }
     });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectors = document.querySelectorAll('.item-state-selector');
+    
+    selectors.forEach(function(select) {
+        select.addEventListener('change', function() {
+            const commentBox = this.parentElement.querySelector('.disapproval-comment');
+            if (this.value === 'disapproved') {
+                commentBox.style.display = 'block';
+                commentBox.required = true;
+            } else {
+                commentBox.style.display = 'none';
+                commentBox.required = false;
+            }
+        });
+    });
+});
 </script>
