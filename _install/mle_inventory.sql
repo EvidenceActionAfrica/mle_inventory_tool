@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 02, 2025 at 08:28 AM
+-- Generation Time: May 07, 2025 at 02:44 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.32
 
@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `categories` (
   `id` int(11) NOT NULL,
-  `category` varchar(255) NOT NULL,
+  `category` enum('Laptop','Smart Phone','Monitor','Mouse','Printer','CPU') NOT NULL,
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
@@ -59,19 +59,8 @@ INSERT INTO `categories` (`id`, `category`, `description`, `created_at`) VALUES
 (23, 'Laptop', 'Apple Macbook', '2025-04-25 06:44:10'),
 (24, 'Monitor', 'Dell E2016hv', '2025-04-25 06:45:13'),
 (25, 'Monitor', 'Hp Compaq', '2025-04-25 06:45:37'),
-(26, 'Monitor', 'Asus ROG', '2025-04-25 06:47:07');
-(15, 'Mouse', 'Logi', '2025-04-09 05:12:23'),
-(16, 'Smart Phone', 'Tecno Camon 40', '2025-04-25 06:39:33'),
-(17, 'Smart Phone', 'Tecno Spark 20', '2025-04-25 06:40:01'),
-(18, 'Mouse', 'Dell MS116', '2025-04-25 06:42:00'),
-(19, 'Mouse', 'Logitech M510', '2025-04-25 06:42:29'),
-(20, 'Laptop', 'Hp Chromebook', '2025-04-25 06:43:25'),
-(21, 'Laptop', 'Dell', '2025-04-25 06:43:44'),
-(22, 'Laptop', 'Acer', '2025-04-25 06:43:51'),
-(23, 'Laptop', 'Apple Macbook', '2025-04-25 06:44:10'),
-(24, 'Monitor', 'Dell E2016hv', '2025-04-25 06:45:13'),
-(25, 'Monitor', 'Hp Compaq', '2025-04-25 06:45:37'),
-(26, 'Monitor', 'Asus ROG', '2025-04-25 06:47:07');
+(26, 'Monitor', 'Asus ROG', '2025-04-25 06:47:07'),
+(27, 'CPU', 'Intel', '2025-05-05 10:06:39');
 
 -- --------------------------------------------------------
 
@@ -132,8 +121,6 @@ INSERT INTO `departments` (`id`, `department_name`, `created_at`, `parent_id`) V
 (19, 'Data Management', '2025-03-26 08:42:11', 13),
 (20, 'EV-AC', '2025-03-26 08:43:54', NULL),
 (22, 'Information Technology', '2025-04-25 06:32:31', 20);
-(20, 'EV-AC', '2025-03-26 08:43:54', NULL),
-(22, 'Information Technology', '2025-04-25 06:32:31', 20);
 
 -- --------------------------------------------------------
 
@@ -178,16 +165,11 @@ INSERT INTO `inventory` (`id`, `category_id`, `description`, `serial_number`, `t
 (27, 17, 'Tecno Spark 20', '6hy7j', 'ea-k1222', '2025-04-01', 30.00, '2028-10-26', '2025-04-25 08:43:46'),
 (28, 26, 'Asus ROG', 'w8ujdyu', '6789-ea', '2025-04-01', 100.00, '2031-10-14', '2025-04-29 06:57:11'),
 (29, 17, 'Tecno Spark 20', 'nb900', '', '2025-04-24', 33.00, '2025-05-10', '2025-04-30 07:53:10'),
-(30, 21, 'Dell', 'iuytrtyu', 'ea-1784', '2025-05-01', 78378.00, '2025-06-07', '2025-05-02 06:28:12');
-(22, 15, 'Logi', '6te6g3', 'ea-200', '2025-04-15', 300.00, '2025-05-10', '2025-04-17 06:34:39'),
-(23, 26, 'Asus ROG', '71083', 'ea-k011', '2025-04-01', 123.00, '2028-10-25', '2025-04-25 06:47:51'),
-(24, 25, 'Hp Compaq', '4e3w2q', 'ea-k102', '2025-04-01', 45.00, '2025-05-30', '2025-04-25 06:48:17'),
-(25, 24, 'Dell E2016hv', '5trftre4', 'ea-12k9', '2025-04-01', 306.00, '2025-05-23', '2025-04-25 06:48:48'),
-(26, 23, 'Apple Macbook', 'hr5ffc', 'ea-k293', '2025-03-18', 890.00, '2031-10-21', '2025-04-25 06:49:30'),
-(27, 17, 'Tecno Spark 20', '6hy7j', 'ea-k1222', '2025-04-01', 30.00, '2028-10-26', '2025-04-25 08:43:46'),
-(28, 26, 'Asus ROG', 'w8ujdyu', '6789-ea', '2025-04-01', 100.00, '2031-10-14', '2025-04-29 06:57:11'),
-(29, 17, 'Tecno Spark 20', 'nb900', '', '2025-04-24', 33.00, '2025-05-10', '2025-04-30 07:53:10'),
-(30, 21, 'Dell', 'iuytrtyu', 'ea-1784', '2025-05-01', 78378.00, '2025-06-07', '2025-05-02 06:28:12');
+(30, 21, 'Dell', 'iuytrtyu', 'ea-1784', '2025-05-01', 78378.00, '2025-06-07', '2025-05-02 06:28:12'),
+(31, 27, 'Intel', 't5t5', 'rd4w3', '2025-05-05', 23390.00, '2025-06-20', '2025-05-05 10:48:13'),
+(32, 27, 'AMD', 'rte77', 'yds788', '2025-05-01', 19000.00, '2027-09-17', '2025-05-05 13:05:05'),
+(33, 3, 'Ligo', 'lg208', 'ea-8397', '2025-05-01', 9000.00, '2027-09-19', '2025-05-06 11:29:47'),
+(34, 9, 'lenovo', 'yes7y3', '8i-u2', '2025-04-19', 20.00, '2027-01-01', '2025-05-07 10:01:28');
 
 -- --------------------------------------------------------
 
@@ -237,7 +219,8 @@ INSERT INTO `inventory_assignment` (`id`, `name`, `email`, `role`, `serial_numbe
 (72, 'rita@test.com', 'rita@test.com', '16 4', '4e3w2q', 'ea-k102', 'rama', 'acknowledged', '2025-04-25 08:44:34', '2025-05-02 05:56:01', '2025-04-25', 24, 0, 0, NULL, 1),
 (73, 'johnmark@test.com', 'johnmark@test.com', '22 4', '6te6g3', 'ea-200', 'maria', 'acknowledged', '2025-04-25 08:49:47', '2025-05-02 05:56:01', '2025-04-25', 22, 0, 1, '2025-04-25 11:52:22', 13),
 (74, 'admin@test.com', 'admin@test.com', '16 4', 'w8ujdyu', '6789-ea', 'rama', 'acknowledged', '2025-04-29 07:55:53', '2025-04-30 08:45:50', '2025-04-29', 28, 0, 0, NULL, NULL),
-(75, 'admin@test.com', 'admin@test.com', '16 4', 'hr5ffc', 'ea-k293', 'rama', 'acknowledged', '2025-04-29 12:29:02', '2025-04-30 08:45:51', '2025-04-29', 26, 0, 0, NULL, NULL);
+(75, 'admin@test.com', 'admin@test.com', '16 4', 'hr5ffc', 'ea-k293', 'rama', 'acknowledged', '2025-04-29 12:29:02', '2025-04-30 08:45:51', '2025-04-29', 26, 0, 0, NULL, NULL),
+(76, 'admin@test.com', 'admin@test.com', '16 4', 'iuytrtyu', 'ea-1784', 'rama', 'acknowledged', '2025-05-02 12:44:44', '2025-05-02 12:47:13', '2025-05-02', 30, 0, 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -282,7 +265,10 @@ INSERT INTO `inventory_returned` (`id`, `assignment_id`, `return_date`, `receive
 (98, 65, '2025-04-29', 2, 'admin@test.com', 'disapproved', 'disapproved', NULL, '2025-04-29 15:31:06', 'Unrepairable', 'Didnt receive', '2025-04-29 12:30:22', '2025-04-30 08:36:04'),
 (100, 65, '2025-04-30', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-04-30 11:34:02', 'Unrepairable', NULL, '2025-04-30 08:33:49', '2025-04-30 08:36:04'),
 (101, 67, '2025-04-30', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-04-30 11:58:19', 'Unrepairable', NULL, '2025-04-30 08:46:04', '2025-04-30 08:58:25'),
-(102, 75, '2025-05-02', 2, 'admin@test.com', 'pending', 'functional', NULL, NULL, NULL, NULL, '2025-05-02 05:56:59', '2025-05-02 05:56:59');
+(102, 75, '2025-05-02', 2, 'admin@test.com', 'disapproved', 'disapproved', NULL, '2025-05-02 12:46:10', 'Repairable', 'I don\'t have the item in my possession', '2025-05-02 05:56:59', '2025-05-02 11:39:13'),
+(103, 74, '2025-05-02', 2, 'admin', 'approved', 'functional', NULL, '2025-05-02 13:22:03', NULL, NULL, '2025-05-02 10:06:21', '2025-05-02 10:22:03'),
+(106, 75, '2025-05-02', 2, 'admin@test.com', 'approved', 'damaged', NULL, '2025-05-02 14:36:15', 'Repairable', NULL, '2025-05-02 11:22:13', '2025-05-02 11:39:13'),
+(107, 76, '2025-05-07', 2, 'admin@test.com', 'pending', 'functional', NULL, NULL, NULL, NULL, '2025-05-07 09:35:44', '2025-05-07 09:35:44');
 
 -- --------------------------------------------------------
 
@@ -330,8 +316,6 @@ INSERT INTO `offices` (`id`, `office_name`, `location_id`, `created_at`) VALUES
 (2, 'Awendo Field Office', 12, '2025-03-13 10:08:13'),
 (3, 'Kuria Hub', 12, '2025-03-13 10:08:13'),
 (4, 'Busia Field Office', 3, '2025-03-13 10:08:13'),
-(7, 'Wagai Hub', 5, '2025-04-09 05:45:33'),
-(8, 'Nairobi', 6, '2025-04-25 06:30:00');
 (7, 'Wagai Hub', 5, '2025-04-09 05:45:33'),
 (8, 'Nairobi', 6, '2025-04-25 06:30:00');
 
@@ -523,8 +507,7 @@ ALTER TABLE `staff_login`
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `confirmation_log`
@@ -537,26 +520,24 @@ ALTER TABLE `confirmation_log`
 --
 ALTER TABLE `departments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `inventory_assignment`
 --
 ALTER TABLE `inventory_assignment`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
 
 --
 -- AUTO_INCREMENT for table `inventory_returned`
 --
 ALTER TABLE `inventory_returned`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
 
 --
 -- AUTO_INCREMENT for table `locations`
@@ -568,7 +549,6 @@ ALTER TABLE `locations`
 -- AUTO_INCREMENT for table `offices`
 --
 ALTER TABLE `offices`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
@@ -587,7 +567,6 @@ ALTER TABLE `reconfirmation_sessions`
 -- AUTO_INCREMENT for table `staff_login`
 --
 ALTER TABLE `staff_login`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
