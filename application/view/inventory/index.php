@@ -293,15 +293,5 @@
                 document.getElementById('item_id').value = itemId;
             });
         });
-
-        // Add event listener for modal trigger
-        const assignButtons = document.querySelectorAll('[data-bs-toggle="modal"]');
-        assignButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Set the item_id in the hidden input field when the modal is triggered
-                const itemId = this.getAttribute('data-item-id');
-                document.getElementById('item_id').value = itemId;
-            });
-        });
     });
 </script>
