@@ -16,8 +16,18 @@ class Inventory extends Controller
             exit();
         }
     
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
         $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
         $items = !empty($search_query) ? $this->model->searchItems($search_query) : $this->model->getItems();
+    
+        // Fetch users and managers for dropdowns
+        $users = $this->model->getAllUsers();  
+        $managers = $this->model->getManagers();  
+    
     
         // Fetch users and managers for dropdowns
         $users = $this->model->getAllUsers();  
@@ -27,6 +37,7 @@ class Inventory extends Controller
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/index.php';
     }
+    
     
 
     // Add a new item
@@ -125,26 +136,6 @@ class Inventory extends Controller
     }
 
 
-    // Search inventory items
-    public function search()
-    {
-        if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
-        }
-        session_start();
-    
-        if (!isset($_SESSION['user_email'])) {
-            header("Location: " . URL . "login");
-            exit();
-        }
-        $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
-        $items = $this->model->searchItems($search_query);
-        require APP . 'view/_templates/sessions.php';
-        require APP . 'view/_templates/header.php';
-        require APP . 'view/inventory/index.php';
-    }
-
     //single item assigning
     public function assignSingle()
     {
@@ -176,5 +167,69 @@ class Inventory extends Controller
         }
     }
 
-
+    //bulk uploading
+    public function bulkUpdate()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+    
+        session_start(); 
+    
+        // Check if user is logged in
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    
+        if (isset($_FILES['bulk_file']) && $_FILES['bulk_file']['error'] == 0) {
+            $file = $_FILES['bulk_file']['tmp_name'];
+            $items = [];
+    
+            if (($handle = fopen($file, "r")) !== FALSE) {
+                // Skip the first 7 rows (header + 6 example rows)
+                for ($i = 0; $i < 8; $i++) {
+                    fgetcsv($handle); // Skip each row
+                }
+    
+                // Process the CSV data from the 8th row onwards
+                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    // Get category ID from the category name provided in the CSV
+                    $category_name = trim($data[0]);  // Assuming category name is in the second column
+                    $category_id = $this->model->getCategoryIdByName($category_name);
+    
+                    if ($category_id !== null) {
+                        // If the category exists, store the item data
+                        $items[] = [
+                            'category_id' => $category_id,
+                            'description' => trim($data[1]),
+                            'serial_number' => trim($data[2]),
+                            'tag_number' => trim($data[3]),
+                            'acquisition_date' => trim($data[4]),
+                            'acquisition_cost' => trim($data[5]),
+                            'warranty_date' => isset($data[6]) ? trim($data[6]) : null,
+                        ];                        
+                    } else {
+                        // Optionally handle the case where the category doesn't exist
+                        // For now, just skip that row
+                        continue;
+                    }
+                }
+    
+                fclose($handle);
+            }
+            // echo '<pre>'; print_r($items); 
+            // Bulk update items using the model
+            if (!empty($items)) {
+                $this->model->bulkInsertItems($items);
+                header('Location: ' . URL . 'inventory/index?update=success');
+            } else {
+                header('Location: ' . URL . 'inventory/index?update=fail');
+            }
+        } else {
+            header('Location: ' . URL . 'inventory/index?update=fail');
+        }
+    }
+    
 }

@@ -60,6 +60,18 @@ INSERT INTO `categories` (`id`, `category`, `description`, `created_at`) VALUES
 (24, 'Monitor', 'Dell E2016hv', '2025-04-25 06:45:13'),
 (25, 'Monitor', 'Hp Compaq', '2025-04-25 06:45:37'),
 (26, 'Monitor', 'Asus ROG', '2025-04-25 06:47:07');
+(15, 'Mouse', 'Logi', '2025-04-09 05:12:23'),
+(16, 'Smart Phone', 'Tecno Camon 40', '2025-04-25 06:39:33'),
+(17, 'Smart Phone', 'Tecno Spark 20', '2025-04-25 06:40:01'),
+(18, 'Mouse', 'Dell MS116', '2025-04-25 06:42:00'),
+(19, 'Mouse', 'Logitech M510', '2025-04-25 06:42:29'),
+(20, 'Laptop', 'Hp Chromebook', '2025-04-25 06:43:25'),
+(21, 'Laptop', 'Dell', '2025-04-25 06:43:44'),
+(22, 'Laptop', 'Acer', '2025-04-25 06:43:51'),
+(23, 'Laptop', 'Apple Macbook', '2025-04-25 06:44:10'),
+(24, 'Monitor', 'Dell E2016hv', '2025-04-25 06:45:13'),
+(25, 'Monitor', 'Hp Compaq', '2025-04-25 06:45:37'),
+(26, 'Monitor', 'Asus ROG', '2025-04-25 06:47:07');
 
 -- --------------------------------------------------------
 
@@ -120,6 +132,8 @@ INSERT INTO `departments` (`id`, `department_name`, `created_at`, `parent_id`) V
 (19, 'Data Management', '2025-03-26 08:42:11', 13),
 (20, 'EV-AC', '2025-03-26 08:43:54', NULL),
 (22, 'Information Technology', '2025-04-25 06:32:31', 20);
+(20, 'EV-AC', '2025-03-26 08:43:54', NULL),
+(22, 'Information Technology', '2025-04-25 06:32:31', 20);
 
 -- --------------------------------------------------------
 
@@ -156,6 +170,15 @@ INSERT INTO `inventory` (`id`, `category_id`, `description`, `serial_number`, `t
 (19, 11, 'Lenovo', '9876tg', '7yhhy6', '2025-03-24', 145.00, '2025-06-12', '2025-03-24 10:19:54'),
 (20, 11, 'Lenovo', '54rg5y6t', 'ea-1100', '2025-03-10', 78.00, '2025-05-30', '2025-03-24 10:20:27'),
 (21, 15, 'Logi', '9uje98', 'ea-00011', '2025-04-08', 20.00, '2028-04-08', '2025-04-09 05:46:23'),
+(22, 15, 'Logi', '6te6g3', 'ea-200', '2025-04-15', 300.00, '2025-05-10', '2025-04-17 06:34:39'),
+(23, 26, 'Asus ROG', '71083', 'ea-k011', '2025-04-01', 123.00, '2028-10-25', '2025-04-25 06:47:51'),
+(24, 25, 'Hp Compaq', '4e3w2q', 'ea-k102', '2025-04-01', 45.00, '2025-05-30', '2025-04-25 06:48:17'),
+(25, 24, 'Dell E2016hv', '5trftre4', 'ea-12k9', '2025-04-01', 306.00, '2025-05-23', '2025-04-25 06:48:48'),
+(26, 23, 'Apple Macbook', 'hr5ffc', 'ea-k293', '2025-03-18', 890.00, '2031-10-21', '2025-04-25 06:49:30'),
+(27, 17, 'Tecno Spark 20', '6hy7j', 'ea-k1222', '2025-04-01', 30.00, '2028-10-26', '2025-04-25 08:43:46'),
+(28, 26, 'Asus ROG', 'w8ujdyu', '6789-ea', '2025-04-01', 100.00, '2031-10-14', '2025-04-29 06:57:11'),
+(29, 17, 'Tecno Spark 20', 'nb900', '', '2025-04-24', 33.00, '2025-05-10', '2025-04-30 07:53:10'),
+(30, 21, 'Dell', 'iuytrtyu', 'ea-1784', '2025-05-01', 78378.00, '2025-06-07', '2025-05-02 06:28:12');
 (22, 15, 'Logi', '6te6g3', 'ea-200', '2025-04-15', 300.00, '2025-05-10', '2025-04-17 06:34:39'),
 (23, 26, 'Asus ROG', '71083', 'ea-k011', '2025-04-01', 123.00, '2028-10-25', '2025-04-25 06:47:51'),
 (24, 25, 'Hp Compaq', '4e3w2q', 'ea-k102', '2025-04-01', 45.00, '2025-05-30', '2025-04-25 06:48:17'),
@@ -307,6 +330,8 @@ INSERT INTO `offices` (`id`, `office_name`, `location_id`, `created_at`) VALUES
 (2, 'Awendo Field Office', 12, '2025-03-13 10:08:13'),
 (3, 'Kuria Hub', 12, '2025-03-13 10:08:13'),
 (4, 'Busia Field Office', 3, '2025-03-13 10:08:13'),
+(7, 'Wagai Hub', 5, '2025-04-09 05:45:33'),
+(8, 'Nairobi', 6, '2025-04-25 06:30:00');
 (7, 'Wagai Hub', 5, '2025-04-09 05:45:33'),
 (8, 'Nairobi', 6, '2025-04-25 06:30:00');
 
@@ -499,6 +524,7 @@ ALTER TABLE `staff_login`
 --
 ALTER TABLE `categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `confirmation_log`
@@ -511,11 +537,13 @@ ALTER TABLE `confirmation_log`
 --
 ALTER TABLE `departments`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
@@ -541,6 +569,7 @@ ALTER TABLE `locations`
 --
 ALTER TABLE `offices`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `positions`
@@ -558,6 +587,7 @@ ALTER TABLE `reconfirmation_sessions`
 -- AUTO_INCREMENT for table `staff_login`
 --
 ALTER TABLE `staff_login`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --

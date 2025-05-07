@@ -76,8 +76,17 @@
                     <input type="hidden" name="id" id="modal_id">
                     <div class="mb-3">
                         <label>Category Name:</label>
-                        <input type="text" name="category_name" id="modal_category_name" class="form-control" required>
+                        <select name="category_name" id="modal_category_name" class="form-select" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Smart Phone">Smart Phone</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Mouse">Mouse</option>
+                            <option value="Printer">Printer</option>
+                            <option value="CPU">CPU</option>
+                        </select>
                     </div>
+
                     <div class="mb-3">
                         <label>Description:</label>
                         <input type="text" name="description" id="modal_description" class="form-control" required>
@@ -96,27 +105,38 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function openModal(id = '', name = '', desc = '') {
+    const form = document.getElementById('category-form');
+    const title = document.getElementById('modal-title');
+    const button = document.getElementById('modal-submit-button');
+    const idField = document.getElementById('modal_id');
+    const categorySelect = document.getElementById('modal_category_name');
+    const descriptionInput = document.getElementById('modal_description');
+
     if (id) {
-        document.getElementById('category-form').action = "<?= URL ?>categories/edit";
-        document.getElementById('modal-title').textContent = "Edit Category";
-        document.getElementById('modal-submit-button').textContent = "Update Category";
-        document.getElementById('modal_id').value = id;
-        document.getElementById('modal_category_name').value = name;
-        document.getElementById('modal_description').value = desc;
+        form.action = "<?= URL ?>categories/edit";
+        title.textContent = "Edit Category";
+        button.textContent = "Update Category";
+        idField.value = id;
+        descriptionInput.value = desc;
+
+        // Set selected category
+        Array.from(categorySelect.options).forEach(option => {
+            option.selected = option.value === name;
+        });
     } else {
-        document.getElementById('category-form').action = "<?= URL ?>categories/add";
-        document.getElementById('modal-title').textContent = "Add Category";
-        document.getElementById('modal-submit-button').textContent = "Add Category";
-        document.getElementById('modal_id').value = '';
-        document.getElementById('modal_category_name').value = '';
-        document.getElementById('modal_description').value = '';
+        form.action = "<?= URL ?>categories/add";
+        title.textContent = "Add Category";
+        button.textContent = "Add Category";
+        idField.value = '';
+        categorySelect.value = '';
+        descriptionInput.value = '';
     }
 
-    var modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
     modal.show();
 }
 
-// Initialize DataTable
+// Initialize Simple DataTables
 window.addEventListener('DOMContentLoaded', () => {
     const datatable = document.getElementById('categoryTable');
     if (datatable) {

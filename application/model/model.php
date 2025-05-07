@@ -5,6 +5,7 @@ ini_set('display_errors', 1);
 class Model
 {
     private $db;
+    private $validCategories = ['Laptop', 'Smart Phone', 'Monitor', 'Mouse', 'Printer', 'CPU'];
 
     public function __construct($db)
     {
@@ -227,6 +228,10 @@ class Model
 
     // Add new category
     public function addCategory($category_name, $description) {
+        if (!in_array($category_name, $this->validCategories)) {
+            throw new InvalidArgumentException("Invalid category name.");
+        }
+
         $sql = "INSERT INTO categories (category, description) VALUES (:category, :description)";
         $query = $this->db->prepare($sql);
         $parameters = array(':category' => $category_name, ':description' => $description);
@@ -241,9 +246,26 @@ class Model
         $query->execute($parameters);
         return $query->fetch(PDO::FETCH_ASSOC);
     }
+    //Get a single category byname
+    public function getCategoryIdByName($category_name)
+    {
+        $sql = "SELECT id FROM categories WHERE category = :category";
+        $query = $this->db->prepare($sql);
+        $query->bindParam(':category', $category_name, PDO::PARAM_STR);
+        $query->execute();
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+    
+        return $result ? $result['id'] : null;
+    }
+    
+
 
     // Update category
     public function updateCategory($id, $category_name, $description) {
+        if (!in_array($category_name, $this->validCategories)) {
+            throw new InvalidArgumentException("Invalid category name.");
+        }
+
         $sql = "UPDATE categories SET category = :category, description = :description WHERE id = :id";
         $query = $this->db->prepare($sql);
         $parameters = array(':category' => $category_name, ':description' => $description, ':id' => $id);
@@ -287,7 +309,46 @@ class Model
         );
         return $query->execute($parameters);
     }
-
+    // Bulk update method
+    public function bulkInsertItems($items) {
+        $sql = "INSERT INTO inventory (
+                    category_id,
+                    description,
+                    serial_number,
+                    tag_number,
+                    acquisition_date,
+                    acquisition_cost,
+                    warranty_date,
+                    created_at
+                ) VALUES (
+                    :category_id,
+                    :description,
+                    :serial_number,
+                    :tag_number,
+                    :acquisition_date,
+                    :acquisition_cost,
+                    :warranty_date,
+                    NOW()
+                )";
+    
+        $query = $this->db->prepare($sql);
+    
+        foreach ($items as $item) {
+            $parameters = array(
+                ':category_id' => $item['category_id'],
+                ':description' => $item['description'],
+                ':serial_number' => $item['serial_number'],
+                ':tag_number' => $item['tag_number'],
+                ':acquisition_date' => $item['acquisition_date'],
+                ':acquisition_cost' => $item['acquisition_cost'],
+                ':warranty_date' => $item['warranty_date']
+            );
+            $query->execute($parameters);
+        }
+    
+        return true;
+    }
+    
     // Get a single inventory item by ID
     public function getItemById($id) {
         $sql = "SELECT * FROM inventory WHERE id = :id";
