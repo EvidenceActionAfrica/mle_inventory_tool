@@ -30,6 +30,13 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fas fa-table me-1"></i></span>
             <div class="d-flex gap-2">
+                <!-- Download Template Icon Button -->
+                <a href="<?= URL; ?>Inventory/downloadInventoryTemplate" 
+                class="btn btn-sm text-white" 
+                style="background-color: #05545a;">
+                <i class="fas fa-download"></i>
+                </a>
+
                 <!-- Upload CSV Button -->
                 <form action="<?= URL; ?>Inventory/bulkUpdate" method="POST" enctype="multipart/form-data" class="mb-0 d-flex align-items-center gap-2">
                     <input type="file" name="bulk_file" accept=".csv" required class="form-control form-control-sm" style="max-width: 200px;" />

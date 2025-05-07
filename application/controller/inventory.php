@@ -189,7 +189,7 @@ class Inventory extends Controller
     
             if (($handle = fopen($file, "r")) !== FALSE) {
                 // Skip the first 7 rows (header + 6 example rows)
-                for ($i = 0; $i < 8; $i++) {
+                for ($i = 0; $i < 10; $i++) {
                     fgetcsv($handle); // Skip each row
                 }
     
@@ -231,5 +231,34 @@ class Inventory extends Controller
             header('Location: ' . URL . 'inventory/index?update=fail');
         }
     }
-    
+    //download inventory templte
+    public function downloadInventoryTemplate()
+    {
+        $filename = "inventory_template.csv";
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+
+        // Header row
+        fputcsv($output, ['category', 'description', 'serial_number', 'tag_number', 'acquisition_date', 'acquisition_cost', 'warranty_date']);
+
+        // Static sample rows (7)
+        fputcsv($output, ['Mouse', 'hp', 'sn100', 'tag-001', '2025-03-05', '20.00', '2025-03-08']);
+        fputcsv($output, ['Laptop', 'Macbook', '4t5rfr5', 'tg-003', '2025-03-03', '100.00', '2025-04-24']);
+        fputcsv($output, ['Printer', 'Laser Printers', '234ede4', 'ea-111', '2025-03-14', '123.00', '2025-05-01']);
+        fputcsv($output, ['Smart Phone', 'Samsung A52', '1q234', '1q2ws', '2025-03-14', '125.00', '2025-04-30']);
+        fputcsv($output, ['Monitor', 'Asus ROG', 'r71083', 'ea-k011', '2025-04-01', '123.00', '2028-10-25']);
+        fputcsv($output, ['CPU', 'Intel', 't5t5', 'rd4w3', '2025-05-05', '23390.00', '2025-06-20']);
+
+        // Instruction row
+        fputcsv($output, ['// - Kindly follow the naming convention above, especially for the category.']);
+        fputcsv($output, ['// - Use yyyy-mm-dd format for all dates (e.g., 2025-03-05), and ensure acquisition_cost is a number with 2 decimal places (e.g., 123.00).']);
+        fputcsv($output, ['// - NB: Do not alter anything in the header or example rows.']);
+        
+
+        fclose($output);
+        exit();
+    }
+
 }
