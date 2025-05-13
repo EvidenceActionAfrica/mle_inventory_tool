@@ -175,9 +175,8 @@ class Inventory extends Controller
             exit();
         }
     
-        session_start(); 
+        session_start();
     
-        // Check if user is logged in
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
@@ -185,52 +184,101 @@ class Inventory extends Controller
     
         if (isset($_FILES['bulk_file']) && $_FILES['bulk_file']['error'] == 0) {
             $file = $_FILES['bulk_file']['tmp_name'];
-            $items = [];
+            $itemsToInsert = [];
+            $errors = [];
+            $successCount = 0;
     
             if (($handle = fopen($file, "r")) !== FALSE) {
-                // Skip the first 7 rows (header + 6 example rows)
+                // Skip the first 10 rows
                 for ($i = 0; $i < 10; $i++) {
-                    fgetcsv($handle); // Skip each row
+                    fgetcsv($handle);
                 }
     
-                // Process the CSV data from the 8th row onwards
-                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                    // Get category ID from the category name provided in the CSV
-                    $category_name = trim($data[0]);  // Assuming category name is in the second column
-                    $category_id = $this->model->getCategoryIdByName($category_name);
+                $rowNumber = 11; // Start at 11 because first 10 rows are skipped
     
-                    if ($category_id !== null) {
-                        // If the category exists, store the item data
-                        $items[] = [
-                            'category_id' => $category_id,
-                            'description' => trim($data[1]),
-                            'serial_number' => trim($data[2]),
-                            'tag_number' => trim($data[3]),
-                            'acquisition_date' => trim($data[4]),
-                            'acquisition_cost' => trim($data[5]),
-                            'warranty_date' => isset($data[6]) ? trim($data[6]) : null,
-                        ];                        
+                while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    $rowErrors = [];
+    
+                    $category_name = trim($data[0] ?? '');
+                    $description = trim($data[1] ?? '');
+                    $serial_number = trim($data[2] ?? '');
+                    $tag_number = !empty(trim($data[3] ?? '')) ? trim($data[3]) : null;
+                    $acquisition_date = trim($data[4] ?? '');
+                    $acquisition_cost = trim($data[5] ?? '');
+                    $warranty_date = isset($data[6]) ? trim($data[6]) : null;
+    
+                    // Validate fields
+                    if (empty($category_name)) {
+                        $rowErrors[] = "Missing category name";
                     } else {
-                        // Optionally handle the case where the category doesn't exist
-                        // For now, just skip that row
-                        continue;
+                        $category_id = $this->model->getCategoryIdByName($category_name);
+                        if ($category_id === null) {
+                            $rowErrors[] = "Invalid category: $category_name";
+                        }
                     }
+    
+                    if (empty($description)) $rowErrors[] = "Missing description";
+                    if (empty($serial_number)) {
+                        $rowErrors[] = "Missing serial number";
+                    } else if ($this->model->isSerialNumberExists($serial_number)) {
+                        $rowErrors[] = "Duplicate serial number: $serial_number";
+                    }
+    
+                    if (empty($acquisition_date)) $rowErrors[] = "Missing acquisition date";
+                    if (empty($acquisition_cost)) $rowErrors[] = "Missing acquisition cost";
+    
+                    if (empty($rowErrors)) {
+                        $itemsToInsert[] = [
+                            'category_id' => $category_id,
+                            'description' => $description,
+                            'serial_number' => $serial_number,
+                            'tag_number' => $tag_number,
+                            'acquisition_date' => $acquisition_date,
+                            'acquisition_cost' => $acquisition_cost,
+                            'warranty_date' => $warranty_date,
+                        ];
+                        $successCount++;
+                    } else {
+                        $errors[] = "Row $rowNumber: " . implode(", ", $rowErrors);
+                    }
+    
+                    $rowNumber++;
                 }
     
                 fclose($handle);
             }
-            // echo '<pre>'; print_r($items); 
-            // Bulk update items using the model
-            if (!empty($items)) {
-                $this->model->bulkInsertItems($items);
-                header('Location: ' . URL . 'inventory/index?update=success');
-            } else {
-                header('Location: ' . URL . 'inventory/index?update=fail');
+    
+            // Insert valid items
+            if (!empty($itemsToInsert)) {
+                $this->model->bulkInsertItems($itemsToInsert);
             }
+    
+            // Create feedback message
+            $message = "$successCount items uploaded successfully.";
+            if (!empty($errors)) {
+                $message .= " " . count($errors) . " items failed: " . implode(" | ", $errors);
+            }
+           
+            $updateStatus = $successCount > 0 ? 'success' : 'fail';
+    
+            header('Location: ' . URL . 'inventory/index?' . http_build_query([
+                'update' => $updateStatus,
+                'message' => $message
+            ]));
+    
         } else {
-            header('Location: ' . URL . 'inventory/index?update=fail');
+            $message = 'Error with the uploaded file.';
+            header('Location: ' . URL . 'inventory/index?' . http_build_query([
+                'update' => 'fail',
+                'message' => $message
+            ]));
         }
+    
+        exit();
     }
+    
+    
+    
     //download inventory templte
     public function downloadInventoryTemplate()
     {

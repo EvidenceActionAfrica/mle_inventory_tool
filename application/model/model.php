@@ -348,6 +348,16 @@ class Model
     
         return true;
     }
+
+    //checking duplicates in bulk upload
+    public function isSerialNumberExists($serial_number)
+    {
+        $sql = "SELECT COUNT(*) FROM inventory WHERE serial_number = :serial_number";
+        $query = $this->db->prepare($sql);
+        $query->execute([':serial_number' => $serial_number]);
+        return $query->fetchColumn() > 0;
+    }
+
     
     // Get a single inventory item by ID
     public function getItemById($id) {

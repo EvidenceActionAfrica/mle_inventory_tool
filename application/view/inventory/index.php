@@ -11,20 +11,38 @@
             <li class="breadcrumb-item">Configurations</li>
             <li class="breadcrumb-item">Inventory</li>
         </ol>
-
         <div class="card mb-4">
             <div class="card-body">
                 This is a collection of all the assets in the organisation and their details.
             </div>
         </div>
+        <!-- success/error message -->
+        <?php if (isset($_GET['update']) && isset($_GET['message'])): ?>
+            <?php
+                // Set background color based on 'update' value
+                $bgColor = $_GET['update'] === 'success' ? 'green' : 'red';
+                $textColor = 'white'; // White text for better contrast
+            ?>
+            <div id="messageDiv" style="background-color: <?= $bgColor; ?>; color: <?= $textColor; ?>; padding: 10px; text-align: center;">
+                <?= htmlspecialchars(urldecode($_GET['message'])); ?>
+            </div>
 
-        <!-- Success & Error Messages -->
-        <?php if (isset($_GET['success'])): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($_GET['success']); ?></div>
-        <?php elseif (isset($_GET['error'])): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']); ?></div>
+            <!-- JavaScript to hide the message after 3 seconds -->
+            <script>
+                // Wait for the DOM to be fully loaded
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Set a timeout to hide the message after 3 seconds (3000ms)
+                    setTimeout(function() {
+                        const messageDiv = document.getElementById('messageDiv');
+                        if (messageDiv) {
+                            messageDiv.style.display = 'none'; // Hide the message
+                        }
+                    }, 10000);
+                });
+            </script>
         <?php endif; ?>
 
+     
         <!-- Card for inventory list -->
         <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -73,28 +91,29 @@
                         <?php if (!empty($items)): ?>
                             <?php foreach ($items as $item): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($item['category'] ?? "N/A"); ?></td>
-                                    <td><?= htmlspecialchars($item['description']); ?></td>
-                                    <td><?= htmlspecialchars($item['serial_number']); ?></td>
-                                    <td><?= htmlspecialchars($item['tag_number']); ?></td>
-                                    <td><?= htmlspecialchars($item['acquisition_date']); ?></td>
-                                    <td><?= htmlspecialchars($item['acquisition_cost']); ?></td>
-                                    <td><?= htmlspecialchars($item['warranty_date']); ?></td>
+                                <td><?= htmlspecialchars($item['category'] ?? 'N/A'); ?></td>
+                                <td><?= htmlspecialchars($item['description'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($item['serial_number'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($item['tag_number'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($item['acquisition_date'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($item['acquisition_cost'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($item['warranty_date'] ?? ''); ?></td>
+
                                     <td class="d-flex justify-content-between">
                                         <!-- Edit Button -->
-                                        <a href="<?= URL ?>inventory/edit/<?= htmlspecialchars($item['id']); ?>" 
+                                        <a href="<?= URL ?>inventory/edit/<?= htmlspecialchars($item['id'] ?? ''); ?>" 
                                            class="btn btn-sm btn-outline-primary me-1">Edit</a>
 
                                         <!-- Delete Button -->
                                         <form action="<?= URL ?>inventory/delete" method="POST" 
                                               onsubmit="return confirm('Are you sure you want to delete this item?');" 
                                               style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']); ?>">
+                                            <input type="hidden" name="id" value="<?= htmlspecialchars($item['id'] ?? ''); ?>">
                                             <button type="submit" name="delete" class="btn btn-sm btn-outline-danger me-1">Delete</button>
                                         </form>
 
                                         <!-- Assign Button (Modal Trigger) -->
-                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#assignModal" data-item-id="<?= htmlspecialchars($item['id']); ?>">Assign</button>
+                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#assignModal" data-item-id="<?= htmlspecialchars($item['id'] ?? ''); ?>">Assign</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -161,22 +180,25 @@
         </div>
     </div>
 </main>
-
 <script>
     window.addEventListener('DOMContentLoaded', () => {
+        // Simple DataTable initialization
         const datatable = document.getElementById('datatablesSimple');
         if (datatable) {
             new simpleDatatables.DataTable(datatable);
         }
 
-        // Add event listener for modal trigger
+        // Assign Modal - set item ID
         const assignButtons = document.querySelectorAll('[data-bs-toggle="modal"]');
         assignButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Set the item_id in the hidden input field when the modal is triggered
+            button.addEventListener('click', function () {
                 const itemId = this.getAttribute('data-item-id');
                 document.getElementById('item_id').value = itemId;
             });
         });
+
+
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
