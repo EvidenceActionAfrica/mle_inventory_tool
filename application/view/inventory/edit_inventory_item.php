@@ -94,10 +94,11 @@
                     <select name="description" id="description" class="form-select" required onchange="populateCategory()">
                         <option value="">Select Description</option>
                         <?php foreach ($categories as $category): ?>
-                            <option value="<?= htmlspecialchars($category['description']) ?>" 
-                                    data-category="<?= htmlspecialchars($category['category']) ?>" 
-                                    data-category-id="<?= htmlspecialchars($category['id']) ?>"
-                                    <?= $item['description'] == $category['description'] ? 'selected' : '' ?>>
+                            <option value="<?= htmlspecialchars($category['id']) ?>" 
+                                data-description="<?= htmlspecialchars($category['description']) ?>"
+                                data-category="<?= htmlspecialchars($category['category']) ?>"
+                                data-category-id="<?= htmlspecialchars($category['id']) ?>" 
+                                <?= $item['category_id'] == $category['id'] ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($category['description']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -107,8 +108,9 @@
                 <!-- Category name (readonly) -->
                 <div class="form-group mb-3">
                     <label for="category" class="form-label">Category:</label>
-                    <input type="text" id="category" class="form-control" value="<?= htmlspecialchars($descriptionToCategory[$item['description']] ?? '') ?>" readonly>
-                    <input type="hidden" name="category_id" id="category_id" value="<?= htmlspecialchars($item['category_id']) ?>">
+                    <input type="hidden" id="category_id" name="category_id" value="<?= htmlspecialchars($item['category_id']) ?>">
+                    <input type="text" id="category" name="category" class="form-control" readonly
+                        value="<?= htmlspecialchars($item['category'] ?? '') ?>">
                 </div>
 
                 <!-- Serial Number -->
@@ -120,7 +122,7 @@
                 <!-- Tag Number -->
                 <div class="form-group mb-3">
                     <label for="tag_number" class="form-label">Tag Number:</label>
-                    <input type="text" id="tag_number" name="tag_number" class="form-control" value="<?= htmlspecialchars($item['tag_number']) ?>" required>
+                    <input type="text" id="tag_number" name="tag_number" class="form-control" value="<?= htmlspecialchars(isset($item['tag_number']) ? $item['tag_number'] : '') ?>">
                 </div>
 
                 <!-- Acquisition Date -->
@@ -138,7 +140,7 @@
                 <!-- Warranty Expiration Date -->
                 <div class="form-group mb-3">
                     <label for="warranty_date" class="form-label">Warranty Expiration Date:</label>
-                    <input type="date" id="warranty_date" name="warranty_date" class="form-control" value="<?= htmlspecialchars($item['warranty_date']) ?>" required>
+                    <input type="date" id="warranty_date" name="warranty_date" class="form-control" value="<?= htmlspecialchars($item['warranty_date'] ?? '') ?>">
                 </div>
 
                 <button type="submit" name="update" class="btn btn-success w-100">Update Item</button>
@@ -158,8 +160,8 @@
         let categoryIdField = document.getElementById("category_id");
 
         let selectedOption = descriptionSelect.options[descriptionSelect.selectedIndex];
-        categoryField.value = selectedOption.getAttribute("data-category"); // Sets category name
-        categoryIdField.value = selectedOption.getAttribute("data-category-id"); // Sets category_id
+        categoryField.value = selectedOption.getAttribute("data-category"); 
+        categoryIdField.value = selectedOption.getAttribute("data-category-id");
     }
 
     function validateDate() {

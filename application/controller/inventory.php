@@ -38,8 +38,6 @@ class Inventory extends Controller
         require APP . 'view/inventory/index.php';
     }
     
-    
-
     // Add a new item
     public function add()
     {
@@ -48,11 +46,12 @@ class Inventory extends Controller
             exit();
         }
         session_start();
-    
+
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $category_id = intval($_POST['category_id']);
             $description = trim($_POST['description']);
@@ -61,6 +60,11 @@ class Inventory extends Controller
             $acquisition_date = trim($_POST['acquisition_date']);
             $acquisition_cost = trim($_POST['acquisition_cost']);
             $warranty_date = trim($_POST['warranty_date']);
+
+            // Convert empty warranty_date to null
+            if ($warranty_date === '') {
+                $warranty_date = null;
+            }
 
             $this->model->addItem($category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date);
             header("Location: " . URL . "inventory/index?success=Item added successfully!");
@@ -73,7 +77,6 @@ class Inventory extends Controller
         }
     }
 
-
     // Edit an existing item
     public function edit($id)
     {
@@ -82,7 +85,6 @@ class Inventory extends Controller
             exit();
         }
         session_start();
-    
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
@@ -90,26 +92,36 @@ class Inventory extends Controller
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id = intval($_POST['id']);
             $category_id = intval($_POST['category_id']);
-            $description = trim($_POST['description']);
+            $category = $this->model->getCategoryById($category_id);
+            $description = $category ? $category['description'] : '';
             $serial_number = trim($_POST['serial_number']);
             $tag_number = trim($_POST['tag_number']);
             $acquisition_date = trim($_POST['acquisition_date']);
             $acquisition_cost = trim($_POST['acquisition_cost']);
             $warranty_date = trim($_POST['warranty_date']);
-    
-            $this->model->updateItem($id, $category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date);
+
+            $this->model->updateItem(
+                $id,
+                $category_id,
+                $description,
+                $serial_number,
+                $tag_number,
+                $acquisition_date,
+                $acquisition_cost,
+                $warranty_date
+            );
+
             header("Location: " . URL . "inventory/index?success=Item updated successfully!");
             exit();
         } else {
-
             $item = $this->model->getItemById($id);
             $categories = $this->model->getCategories() ?? [];
+
             require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory/edit_inventory_item.php';
         }
     }
-    
 
     // Delete an item
     public function delete()

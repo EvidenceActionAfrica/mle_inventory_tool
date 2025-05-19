@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login</title>
   <link href="<?php echo URL; ?>css/login.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
 <style>
   .bt-logout{
     background-color: #20253a;
@@ -23,6 +24,21 @@
     justify-content:space-between; 
     gap:2rem;
   }
+
+.google-btn {
+  display: inline-block;
+  background: #4285f4;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.google-btn:hover {
+  background: #3367d6;
+}
+</style>
 
 </style>
 </head>
@@ -51,6 +67,10 @@
           <input type="password" name="inputPassword" id="inputPassword" class="form-control" required>
         </div>
         <button type="submit">Login</button>
+        <!-- <a href="<?php echo URL; ?>login/loginWithGoogle" class="google-btn">
+            <i class="fab fa-google"></i> Sign in with Google
+        </a> -->
+
       </form>
     </div>
   </div>

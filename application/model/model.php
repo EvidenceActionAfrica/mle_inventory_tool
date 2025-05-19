@@ -298,6 +298,12 @@ class Model
         $sql = "INSERT INTO inventory (category_id, description, serial_number, tag_number, acquisition_date, acquisition_cost, warranty_date) 
                 VALUES (:category_id, :description, :serial_number, :tag_number, :acquisition_date, :acquisition_cost, :warranty_date)";
         $query = $this->db->prepare($sql);
+
+        // Convert empty tag_number to NULL
+        if (empty($tag_number)) {
+            $tag_number = null;
+        }
+
         $parameters = array(
             ':category_id' => $category_id,
             ':description' => $description,
@@ -307,8 +313,23 @@ class Model
             ':acquisition_cost' => $acquisition_cost,
             ':warranty_date' => $warranty_date
         );
-        return $query->execute($parameters);
+
+        // Bind parameters, ensuring NULL is sent correctly
+        $query->bindValue(':category_id', $category_id);
+        $query->bindValue(':description', $description);
+        $query->bindValue(':serial_number', $serial_number);
+        if ($tag_number === null) {
+            $query->bindValue(':tag_number', null, PDO::PARAM_NULL);
+        } else {
+            $query->bindValue(':tag_number', $tag_number);
+        }
+        $query->bindValue(':acquisition_date', $acquisition_date);
+        $query->bindValue(':acquisition_cost', $acquisition_cost);
+        $query->bindValue(':warranty_date', $warranty_date);
+
+        return $query->execute();
     }
+
     // Bulk update method
     public function bulkInsertItems($items) {
         $sql = "INSERT INTO inventory (
@@ -330,10 +351,13 @@ class Model
                     :warranty_date,
                     NOW()
                 )";
-    
+
         $query = $this->db->prepare($sql);
-    
+
         foreach ($items as $item) {
+            // Convert empty warranty_date to null to avoid SQL errors
+            $warranty_date = (!empty($item['warranty_date'])) ? $item['warranty_date'] : null;
+
             $parameters = array(
                 ':category_id' => $item['category_id'],
                 ':description' => $item['description'],
@@ -341,13 +365,15 @@ class Model
                 ':tag_number' => $item['tag_number'],
                 ':acquisition_date' => $item['acquisition_date'],
                 ':acquisition_cost' => $item['acquisition_cost'],
-                ':warranty_date' => $item['warranty_date']
+                ':warranty_date' => $warranty_date,
             );
+
             $query->execute($parameters);
         }
-    
+
         return true;
     }
+
 
     //checking duplicates in bulk upload
     public function isSerialNumberExists($serial_number)
@@ -370,13 +396,23 @@ class Model
 
     // Update inventory item
     public function updateItem($id, $category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date) {
-        $sql = "UPDATE inventory 
-                SET category_id = :category_id, description = :description, serial_number = :serial_number, 
-                    tag_number = :tag_number, acquisition_date = :acquisition_date, 
-                    acquisition_cost = :acquisition_cost, warranty_date = :warranty_date
+        $sql = "UPDATE inventory SET
+                    category_id = :category_id,
+                    description = :description,
+                    serial_number = :serial_number,
+                    tag_number = :tag_number,
+                    acquisition_date = :acquisition_date,
+                    acquisition_cost = :acquisition_cost,
+                    warranty_date = :warranty_date
                 WHERE id = :id";
+
         $query = $this->db->prepare($sql);
-        $parameters = array(
+
+        // Convert empty strings to null for tag_number and warranty_date
+        $tag_number = ($tag_number === '') ? null : $tag_number;
+        $warranty_date = ($warranty_date === '') ? null : $warranty_date;
+
+        $parameters = [
             ':id' => $id,
             ':category_id' => $category_id,
             ':description' => $description,
@@ -384,8 +420,9 @@ class Model
             ':tag_number' => $tag_number,
             ':acquisition_date' => $acquisition_date,
             ':acquisition_cost' => $acquisition_cost,
-            ':warranty_date' => $warranty_date
-        );
+            ':warranty_date' => $warranty_date,
+        ];
+
         return $query->execute($parameters);
     }
 

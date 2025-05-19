@@ -58,3 +58,11 @@ define('DB_NAME', 'mle_inventory');
 define('DB_USER', 'root');
 define('DB_PASS', 'your_password');
 define('DB_CHARSET', 'utf8');
+
+
+/**
+ * Configuration for: Google OAuth Login
+ */
+define('GOOGLE_CLIENT_ID', '1008330128121-22b9m96a6252g66ssbgnk8slthdpr64j.apps.googleusercontent.com');
+define('GOOGLE_CLIENT_SECRET', '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');
+define('GOOGLE_REDIRECT_URI', 'http://localhost/mle_inventory_tool/login/googleCallback');

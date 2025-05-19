@@ -117,7 +117,7 @@
 
                     <div class="form-group mb-3">
                         <label for="tag_number" class="form-label">Tag Number:</label>
-                        <input type="text" id="tag_number" name="tag_number" class="form-control" required>
+                        <input type="text" id="tag_number" name="tag_number" class="form-control" >
                     </div>
 
                     <div class="form-group mb-3">
@@ -132,7 +132,7 @@
 
                     <div class="form-group mb-3">
                         <label for="warranty_date" class="form-label">Warranty Expiration Date:</label>
-                        <input type="date" id="warranty_date" name="warranty_date" class="form-control" required>
+                        <input type="date" id="warranty_date" name="warranty_date" class="form-control">
                     </div>
 
                     <button type="submit" class="btn btn-success w-100">Submit</button>
