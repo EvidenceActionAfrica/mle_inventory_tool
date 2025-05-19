@@ -355,20 +355,21 @@ class Model
         $query = $this->db->prepare($sql);
 
         foreach ($items as $item) {
-            // Convert empty warranty_date to null to avoid SQL errors
-            $warranty_date = (!empty($item['warranty_date'])) ? $item['warranty_date'] : null;
+            $warranty_date = $item['warranty_date'];
 
-            $parameters = array(
-                ':category_id' => $item['category_id'],
-                ':description' => $item['description'],
-                ':serial_number' => $item['serial_number'],
-                ':tag_number' => $item['tag_number'],
-                ':acquisition_date' => $item['acquisition_date'],
-                ':acquisition_cost' => $item['acquisition_cost'],
-                ':warranty_date' => $warranty_date,
-            );
+            $query->bindValue(':category_id', $item['category_id'], PDO::PARAM_INT);
+            $query->bindValue(':description', $item['description'], PDO::PARAM_STR);
+            $query->bindValue(':serial_number', $item['serial_number'], PDO::PARAM_STR);
+            $query->bindValue(':tag_number', $item['tag_number'], PDO::PARAM_STR);
+            $query->bindValue(':acquisition_date', $item['acquisition_date'], PDO::PARAM_STR);
+            $query->bindValue(':acquisition_cost', $item['acquisition_cost'], PDO::PARAM_STR);
 
-            $query->execute($parameters);
+            if (empty($warranty_date)) {
+                $query->bindValue(':warranty_date', null, PDO::PARAM_NULL);
+            } else {
+                $query->bindValue(':warranty_date', $warranty_date, PDO::PARAM_STR);
+            }
+            $query->execute();
         }
 
         return true;

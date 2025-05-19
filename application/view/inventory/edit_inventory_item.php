@@ -122,7 +122,8 @@
                 <!-- Tag Number -->
                 <div class="form-group mb-3">
                     <label for="tag_number" class="form-label">Tag Number:</label>
-                    <input type="text" id="tag_number" name="tag_number" class="form-control" value="<?= htmlspecialchars(isset($item['tag_number']) ? $item['tag_number'] : '') ?>">
+                    <input type="text" id="tag_number" name="tag_number" class="form-control"
+                    value="<?= htmlspecialchars((string)($item['tag_number'] ?? '')) ?>">
                 </div>
 
                 <!-- Acquisition Date -->
@@ -140,7 +141,8 @@
                 <!-- Warranty Expiration Date -->
                 <div class="form-group mb-3">
                     <label for="warranty_date" class="form-label">Warranty Expiration Date:</label>
-                    <input type="date" id="warranty_date" name="warranty_date" class="form-control" value="<?= htmlspecialchars($item['warranty_date'] ?? '') ?>">
+                    <input type="date" id="warranty_date" name="warranty_date" class="form-control"
+                    value="<?= htmlspecialchars((string)($item['warranty_date'] ?? '')) ?>">
                 </div>
 
                 <button type="submit" name="update" class="btn btn-success w-100">Update Item</button>
