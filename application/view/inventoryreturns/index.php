@@ -217,7 +217,7 @@
         <div class="wizard-step">
             <strong>Step 2: Enter Return Date</strong>
             <div class="form-group">
-                <input type="date" name="return_date" class="form-control" value="<?= date('Y-m-d'); ?>" required>
+                <input type="date" name="return_date" class="form-control" value="<?= date('Y-m-d'); ?>" max="<?= date('Y-m-d'); ?>" required>
             </div>
         </div>
 

@@ -32,9 +32,9 @@ class Model
     public function reset_password($email, $hashed_password,){
         $sql = "UPDATE staff_login SET password = :password WHERE email = :email";
         $query = $this->db->prepare($sql);
-    $query->bindValue(':password', $hashed_password, PDO::PARAM_STR);
-    $query->bindValue(':email', $email, PDO::PARAM_STR);
-    return $query->execute();
+        $query->bindValue(':password', $hashed_password, PDO::PARAM_STR);
+        $query->bindValue(':email', $email, PDO::PARAM_STR);
+        return $query->execute();
     }
     // user management function
     public function get_users()
@@ -216,7 +216,6 @@ class Model
         return $query->execute($parameters);
     }
 
-
         //CATEGORY MODEL:
     // Fetch all categories
     public function getCategories() {
@@ -258,8 +257,6 @@ class Model
         return $result ? $result['id'] : null;
     }
     
-
-
     // Update category
     public function updateCategory($id, $category_name, $description) {
         if (!in_array($category_name, $this->validCategories)) {
@@ -292,40 +289,54 @@ class Model
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    //utility function to get location from staff_login table
+    public function getCustodianLocation($custodian_id) {
+        $sql = "SELECT dutystation FROM staff_login WHERE id = :id AND role = 'admin'";
+        $query = $this->db->prepare($sql);
+        $query->bindValue(':id', $custodian_id, PDO::PARAM_INT);
+        $query->execute();
+
+        $result = $query->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['dutystation'] : null;
+    }
 
     // Add new inventory item
-    public function addItem($category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date) {
-        $sql = "INSERT INTO inventory (category_id, description, serial_number, tag_number, acquisition_date, acquisition_cost, warranty_date) 
-                VALUES (:category_id, :description, :serial_number, :tag_number, :acquisition_date, :acquisition_cost, :warranty_date)";
+    public function addItem($category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date, $custodian_id) {
+        $location = $this->getCustodianLocation($custodian_id);
+
+        $sql = "INSERT INTO inventory (
+                    category_id,
+                    description,
+                    serial_number,
+                    tag_number,
+                    acquisition_date,
+                    acquisition_cost,
+                    warranty_date,
+                    location,
+                    custodian
+                ) VALUES (
+                    :category_id,
+                    :description,
+                    :serial_number,
+                    :tag_number,
+                    :acquisition_date,
+                    :acquisition_cost,
+                    :warranty_date,
+                    :location,
+                    :custodian
+                )";
+
         $query = $this->db->prepare($sql);
 
-        // Convert empty tag_number to NULL
-        if (empty($tag_number)) {
-            $tag_number = null;
-        }
-
-        $parameters = array(
-            ':category_id' => $category_id,
-            ':description' => $description,
-            ':serial_number' => $serial_number,
-            ':tag_number' => $tag_number,
-            ':acquisition_date' => $acquisition_date,
-            ':acquisition_cost' => $acquisition_cost,
-            ':warranty_date' => $warranty_date
-        );
-
-        // Bind parameters, ensuring NULL is sent correctly
         $query->bindValue(':category_id', $category_id);
         $query->bindValue(':description', $description);
         $query->bindValue(':serial_number', $serial_number);
-        if ($tag_number === null) {
-            $query->bindValue(':tag_number', null, PDO::PARAM_NULL);
-        } else {
-            $query->bindValue(':tag_number', $tag_number);
-        }
+        $query->bindValue(':tag_number', $tag_number ?: null, $tag_number ? PDO::PARAM_STR : PDO::PARAM_NULL);
         $query->bindValue(':acquisition_date', $acquisition_date);
         $query->bindValue(':acquisition_cost', $acquisition_cost);
-        $query->bindValue(':warranty_date', $warranty_date);
+        $query->bindValue(':warranty_date', $warranty_date ?: null, $warranty_date ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $query->bindValue(':location', $location);
+        $query->bindValue(':custodian', $custodian_id);
 
         return $query->execute();
     }
@@ -340,6 +351,8 @@ class Model
                     acquisition_date,
                     acquisition_cost,
                     warranty_date,
+                    location,
+                    custodian,
                     created_at
                 ) VALUES (
                     :category_id,
@@ -349,32 +362,31 @@ class Model
                     :acquisition_date,
                     :acquisition_cost,
                     :warranty_date,
+                    :location,
+                    :custodian,
                     NOW()
                 )";
 
         $query = $this->db->prepare($sql);
 
         foreach ($items as $item) {
-            $warranty_date = $item['warranty_date'];
+            $location = $this->getCustodianLocation($item['custodian']);
 
             $query->bindValue(':category_id', $item['category_id'], PDO::PARAM_INT);
             $query->bindValue(':description', $item['description'], PDO::PARAM_STR);
             $query->bindValue(':serial_number', $item['serial_number'], PDO::PARAM_STR);
-            $query->bindValue(':tag_number', $item['tag_number'], PDO::PARAM_STR);
+            $query->bindValue(':tag_number', $item['tag_number'] ?: null, $item['tag_number'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $query->bindValue(':acquisition_date', $item['acquisition_date'], PDO::PARAM_STR);
             $query->bindValue(':acquisition_cost', $item['acquisition_cost'], PDO::PARAM_STR);
+            $query->bindValue(':warranty_date', $item['warranty_date'] ?: null, $item['warranty_date'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $query->bindValue(':location', $location, PDO::PARAM_STR);
+            $query->bindValue(':custodian', $item['custodian'], PDO::PARAM_STR);
 
-            if (empty($warranty_date)) {
-                $query->bindValue(':warranty_date', null, PDO::PARAM_NULL);
-            } else {
-                $query->bindValue(':warranty_date', $warranty_date, PDO::PARAM_STR);
-            }
             $query->execute();
         }
 
         return true;
     }
-
 
     //checking duplicates in bulk upload
     public function isSerialNumberExists($serial_number)
@@ -396,7 +408,22 @@ class Model
     }
 
     // Update inventory item
-    public function updateItem($id, $category_id, $description, $serial_number, $tag_number, $acquisition_date, $acquisition_cost, $warranty_date) {
+    public function updateItem(
+        $id,
+        $category_id,
+        $description,
+        $serial_number,
+        $tag_number,
+        $acquisition_date,
+        $acquisition_cost,
+        $warranty_date,
+        $custodian
+        ) {
+        $location = $this->getCustodianLocation($custodian);
+        if (!$location) {
+            $location = 'Unknown';
+        }
+
         $sql = "UPDATE inventory SET
                     category_id = :category_id,
                     description = :description,
@@ -404,27 +431,25 @@ class Model
                     tag_number = :tag_number,
                     acquisition_date = :acquisition_date,
                     acquisition_cost = :acquisition_cost,
-                    warranty_date = :warranty_date
+                    warranty_date = :warranty_date,
+                    location = :location,
+                    custodian = :custodian
                 WHERE id = :id";
 
         $query = $this->db->prepare($sql);
 
-        // Convert empty strings to null for tag_number and warranty_date
-        $tag_number = ($tag_number === '') ? null : $tag_number;
-        $warranty_date = ($warranty_date === '') ? null : $warranty_date;
+        $query->bindValue(':id', $id, PDO::PARAM_INT);
+        $query->bindValue(':category_id', $category_id, PDO::PARAM_INT);
+        $query->bindValue(':description', $description, PDO::PARAM_STR);
+        $query->bindValue(':serial_number', $serial_number, PDO::PARAM_STR);
+        $query->bindValue(':tag_number', $tag_number ?: null, PDO::PARAM_NULL); // simplified null bind
+        $query->bindValue(':acquisition_date', $acquisition_date, PDO::PARAM_STR);
+        $query->bindValue(':acquisition_cost', $acquisition_cost);
+        $query->bindValue(':warranty_date', $warranty_date ?: null, PDO::PARAM_NULL); // simplified null bind
+        $query->bindValue(':location', $location, PDO::PARAM_STR);
+        $query->bindValue(':custodian', $custodian, PDO::PARAM_INT);
 
-        $parameters = [
-            ':id' => $id,
-            ':category_id' => $category_id,
-            ':description' => $description,
-            ':serial_number' => $serial_number,
-            ':tag_number' => $tag_number,
-            ':acquisition_date' => $acquisition_date,
-            ':acquisition_cost' => $acquisition_cost,
-            ':warranty_date' => $warranty_date,
-        ];
-
-        return $query->execute($parameters);
+        return $query->execute();
     }
 
     // Delete inventory item
@@ -538,9 +563,12 @@ class Model
                     c.category AS category,  
                     i.description, 
                     i.serial_number, 
-                    i.tag_number 
+                    i.tag_number,
+                    i.custodian,
+                    sl.email AS custodian_email
                 FROM inventory i
                 LEFT JOIN categories c ON i.category_id = c.id
+                LEFT JOIN staff_login sl ON i.custodian = sl.id
                 WHERE 
                     -- Ensure item is not currently assigned
                     i.id NOT IN (
@@ -570,13 +598,36 @@ class Model
                             AND ir.repair_status = 'Repairable' 
                         )
                     )";
-        
+
         $query = $this->db->prepare($sql);
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
-        
+        $items = $query->fetchAll(PDO::FETCH_ASSOC);
+
+        // Parse custodian name from email with first letters uppercase
+        foreach ($items as &$item) {
+            if (!empty($item['custodian_email'])) {
+                $namePart = explode('@', $item['custodian_email'])[0]; // get part before @
+                $item['custodian_name'] = $this->toPascalCase($namePart);
+            } else {
+                $item['custodian_name'] = 'Unassigned';
+            }
+        }
+
+        return $items;
     }
-        
+
+    // Helper function to convert string to PascalCase (First letter of each word uppercase, no spaces)
+    private function toPascalCase($string)
+    {
+        $string = str_replace(['-', '_', '.'], ' ', strtolower($string));
+        $words = explode(' ', $string);
+        $pascalCased = '';
+        foreach ($words as $word) {
+            $pascalCased .= ucfirst($word); // capitalize first letter of each word
+        }
+        return $pascalCased;
+    }
+     
     // Fetch all users
     public function getAllUsers()
     {
@@ -611,7 +662,7 @@ class Model
         if (!$manager) {
             return "Invalid manager email: " . htmlspecialchars($manager_email);
         }
-        $managed_by = strtok($manager['email'], '@');
+        $managed_by = ucfirst(strtok($manager['email'], '@'));
 
         $userSql = "SELECT 
                         email AS name,
@@ -653,7 +704,7 @@ class Model
 
             $query = $this->db->prepare($sql);
             $parameters = [
-                ':name' => $user['name'],
+                ':name' => ucfirst(strtok($user['email'], '@')),
                 ':email' => $user['email'],
                 ':role' => $user['role'],
                 ':item_id' => $item_id,
@@ -750,7 +801,6 @@ class Model
             return "DB Error: " . $e->getMessage();
         }
     }
-    
     
     //get manageers
     public function getManagers()
@@ -895,7 +945,6 @@ class Model
         return "Assignment successfully updated!";
     }
     
- 
     // Delete assignment only if acknowledgment_status is pending
     public function deleteAssignment($id) {
         // Ensure only pending assignments can be deleted
@@ -942,7 +991,7 @@ class Model
     }
     
         // Acknowledge pending items
-        public function acknowledgeAssignment($assignment_id, $user_name)
+    public function acknowledgeAssignment($assignment_id, $user_name)
         {
             $sql = "UPDATE inventory_assignment
                     SET acknowledgment_status = 'acknowledged', updated_at = NOW()
@@ -958,7 +1007,7 @@ class Model
         }
 
         ///get items assigned to a logged in user
-        public function getApprovedAssignmentsByLoggedInUser($user_email)
+    public function getApprovedAssignmentsByLoggedInUser($user_email)
         {
             $sql = "SELECT 
                         ia.id,
@@ -1000,7 +1049,7 @@ class Model
           
             //item returning process...
         //model to show returned item
-        public function getReturnedItems($returned_by)
+    public function getReturnedItems($returned_by)
         {
             try {
                 $sql = "SELECT ir.id, 
@@ -1037,7 +1086,7 @@ class Model
         }
         
            //delete returned items that are not approve
-        public function deleteReturn($id)
+    public function deleteReturn($id)
            {
                try {
                    // Check item status first
@@ -1548,69 +1597,52 @@ class Model
     public function getUnassignedItems()
     {
         try {
-            $sql = "SELECT 
-                        i.id, 
-                        c.category AS category,  
-                        i.description, 
-                        i.serial_number, 
-                        i.tag_number 
-                    FROM inventory i
-                    LEFT JOIN categories c ON i.category_id = c.id
-                    WHERE 
-                        -- Ensure item is not currently assigned
+            $sql = "
+                SELECT 
+                    i.id, 
+                    c.category AS category,  
+                    i.description, 
+                    i.serial_number, 
+                    i.tag_number,
+                    i.custodian,
+                    SUBSTRING_INDEX(sl.email, '@', 1) AS custodian_name,
+                    sl.dutystation AS location_id,
+                    loc.location_name AS location_name
+                FROM inventory i
+                LEFT JOIN categories c ON i.category_id = c.id
+                LEFT JOIN staff_login sl ON i.custodian = sl.id
+                LEFT JOIN locations loc ON sl.dutystation = loc.id
+                WHERE 
+                    i.id NOT IN (
+                        SELECT ia.item FROM inventory_assignment ia
+                        WHERE ia.acknowledgment_status IN ('pending', 'approved', 'acknowledged')
+                    )
+                    AND (
                         i.id NOT IN (
                             SELECT ia.item FROM inventory_assignment ia
-                            WHERE ia.acknowledgment_status IN ('pending', 'approved', 'acknowledged')
+                            JOIN inventory_returned ir ON ia.id = ir.assignment_id
+                            WHERE ir.item_state = 'lost' 
                         )
-                        -- Ensure item is either never assigned OR returned and marked as functional OR is repairable
-                        AND (
-                            -- Exclude lost items
-                            i.id NOT IN (
-                                SELECT ia.item FROM inventory_assignment ia
-                                JOIN inventory_returned ir ON ia.id = ir.assignment_id
-                                WHERE ir.item_state = 'lost' 
-                            )
-                            -- Include approved functional items
-                            OR i.id IN (
-                                SELECT ia.item FROM inventory_assignment ia
-                                JOIN inventory_returned ir ON ia.id = ir.assignment_id
-                                WHERE ir.item_state = 'functional'
-                                AND ir.status = 'approved' 
-                            )
-                            -- Include repairable damaged items
-                            OR i.id IN (
-                                SELECT ia.item FROM inventory_assignment ia
-                                JOIN inventory_returned ir ON ia.id = ir.assignment_id
-                                WHERE ir.item_state = 'damaged'
-                                AND ir.repair_status = 'Repairable' 
-                            )
-                        )
-                        -- Ensure the item is functional and approved or repairable
                         OR i.id IN (
                             SELECT ia.item FROM inventory_assignment ia
                             JOIN inventory_returned ir ON ia.id = ir.assignment_id
-                            WHERE 
-                                (
-                                    -- Functional and approved items
-                                    (ir.item_state = 'functional' AND ir.status = 'approved')
-                                    -- Damaged items with repairable status
-                                    OR (ir.item_state = 'damaged' AND ir.repair_status = 'Repairable')
-                                )
-                        )";
-            
-            // Prepare the query
+                            WHERE ir.item_state = 'functional' AND ir.status = 'approved'
+                        )
+                        OR i.id IN (
+                            SELECT ia.item FROM inventory_assignment ia
+                            JOIN inventory_returned ir ON ia.id = ir.assignment_id
+                            WHERE ir.item_state = 'damaged' AND ir.repair_status = 'Repairable'
+                        )
+                    )
+            ";
+
             $query = $this->db->prepare($sql);
-            // Execute the query
             $query->execute();
-            
-            // Fetch all results
             $unassignedItems = $query->fetchAll(PDO::FETCH_ASSOC);
-            
+
             return $unassignedItems;
-            return $result['in_stock_count'];
-            
+
         } catch (PDOException $e) {
-            // Handle any SQL exceptions
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
@@ -2202,15 +2234,20 @@ class Model
     {
         $sql = "INSERT INTO reconfirmation_sessions (year, month, initiated_by, start_date, active) 
                 VALUES (:year, :month, :initiated_by, :start_date, 1)";
-    
+
         $stmt = $this->db->prepare($sql);
-    
-        return $stmt->execute([
+        $success = $stmt->execute([
             ':year' => date('Y'),
             ':month' => date('m'),
             ':initiated_by' => $initiated_by,
             ':start_date' => date('Y-m-d'),
         ]);
+
+        if ($success) {
+            return $this->db->lastInsertId(); // ✅ Ensure session ID is returned
+        } else {
+            return false; // or throw an exception
+        }
     }
     
     public function getActiveReconfirmationSession() {
@@ -2236,13 +2273,21 @@ class Model
 
     public function assignSessionToUnconfirmed($session_id)
     {
+        if (!is_numeric($session_id)) {
+            throw new InvalidArgumentException("Invalid session_id passed to assignSessionToUnconfirmed.");
+        }
+
         $sql = "UPDATE inventory_assignment 
-                SET reconfirm_enabled = 1, confirmed = 0, confirmation_date = NULL, reconfirmation_session_id = :session_id 
-                WHERE reconfirm_enabled = 0"; 
+                SET reconfirm_enabled = 1, 
+                    confirmed = 0, 
+                    confirmation_date = NULL, 
+                    reconfirmation_session_id = :session_id 
+                WHERE reconfirm_enabled = 0";
+
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([':session_id' => $session_id]);
     }
-    
+
     //recording each confirmation
     public function recordConfirmation($inventoryAssignmentId, $status, $confirmedBy)
     {

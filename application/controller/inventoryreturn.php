@@ -342,21 +342,45 @@ class inventoryreturn extends Controller
     
     public function unassignedItems()
     {
-        if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
-        }
         session_start();
-    
+
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
-        $unassignedItems = $this->model->getUnassignedItems();
+
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        // Get unassigned items (already includes custodian_name)
+        $unassignedItems = $this->model->getUnassignedInventory();
+
+        // Optionally get full user list (for location names or other user details)
+        $users = $this->model->get_users();
+
+        // Map user ID to user for location lookup
+        $usersMap = [];
+        foreach ($users as $user) {
+            $usersMap[$user->id] = $user;
+        }
+
+        // Enrich items with location name, use 'Unassigned' if none
+        foreach ($unassignedItems as &$item) {
+            $item['location_name'] = 'Unassigned';
+
+            if (!empty($item['custodian']) && isset($usersMap[$item['custodian']])) {
+                $custodian = $usersMap[$item['custodian']];
+                $item['location_name'] = $custodian->dutystation ?? 'Unknown';
+            }
+        }
+
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventory/items_instock.php';
     }
+
     //search unassihnmed
     public function searchUnassignedItems()
     {

@@ -24,23 +24,37 @@
     justify-content:space-between; 
     gap:2rem;
   }
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% - 20px);
+    padding: 12px;
+    color: #fff;
+    background-color: #4285f4;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 80;
+    font-size: 16px;
+    line-height: 1.2;
+    text-decoration: none;
+    margin-top: 10px;
+    gap: 10px;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease;
+  }
 
-.google-btn {
-  display: inline-block;
-  background: #4285f4;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: 600;
-  margin-top: 10px;
-}
-.google-btn:hover {
-  background: #3367d6;
-}
+  .google-btn img {
+    height: 20px;
+    width: 20px;
+  }
+
+  .google-btn:hover {
+      background: #3367d6;
+  }
 </style>
 
-</style>
 </head>
 <body>
 <?php  if (!empty($invalid_credentials)){echo $invalid_credentials; }?>
@@ -68,7 +82,8 @@
         </div>
         <button type="submit">Login</button>
         <!-- <a href="<?php echo URL; ?>login/loginWithGoogle" class="google-btn">
-            <i class="fab fa-google"></i> Sign in with Google
+            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" >
+            Sign in with Google
         </a> -->
 
       </form>

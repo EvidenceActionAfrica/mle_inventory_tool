@@ -40,24 +40,29 @@
                         <th>Description</th>
                         <th>Serial Number</th>
                         <th>Tag Number</th>
+                        <th>Location</th>  
+                        <th>Custodian</th>      
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($unassignedItems)): ?>
                         <?php foreach ($unassignedItems as $item): ?>
                             <tr>
-                                <td><?= htmlspecialchars($item['category']) ?></td>
-                                <td><?= htmlspecialchars($item['description']) ?></td>
-                                <td><?= htmlspecialchars($item['serial_number']) ?></td>
-                                <td><?= htmlspecialchars($item['tag_number']) ?></td>
+                                <td><?= htmlspecialchars($item['category'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['description'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['serial_number'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['tag_number'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['location_name'] ?? '') ?></td>
+                                <td><?= htmlspecialchars($item['custodian_name'] ?? '') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="4" class="text-center">No items in stock found.</td>
+                            <td colspan="6" class="text-center">No items in stock found.</td> 
                         </tr>
                     <?php endif; ?>
                 </tbody>
+
             </table>
         </div>
     </div>

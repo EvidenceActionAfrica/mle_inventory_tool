@@ -277,33 +277,41 @@ class inventoryassignment extends Controller
     public function toggleReconfirmation()
     {
         session_start();
-    
+
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
+
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
-    
+
         $adminEmail = $_SESSION['user_email'];
-        $enabled = $_POST['enable_reconfirm'] ?? false;
-    
+        $enabled = isset($_POST['enable_reconfirm']) && $_POST['enable_reconfirm'] == '1';
+
         // Check for existing active session
         $activeSession = $this->model->getActiveReconfirmationSession();
-    
+
         if ($enabled) {
             if ($activeSession) {
                 $_SESSION['error'] = "Reconfirmation is already active. Only {$activeSession['initiated_by']} can deactivate it.";
             } else {
+                // Start a new session and get the inserted session ID
                 $sessionId = $this->model->startNewReconfirmationSession($adminEmail);
-                $this->model->assignSessionToUnconfirmed($sessionId);
-                $_SESSION['success'] = "Reconfirmation session started.";
+
+                // Ensure session ID is valid before assigning
+                if ($sessionId && is_numeric($sessionId)) {
+                    $this->model->assignSessionToUnconfirmed((int)$sessionId);
+                    $_SESSION['success'] = "Reconfirmation session started successfully.";
+                } else {
+                    $_SESSION['error'] = "Failed to start reconfirmation session. Please try again.";
+                }
             }
         } else {
             if (!$activeSession) {
-                $_SESSION['error'] = "No active reconfirmation session.";
+                $_SESSION['error'] = "No active reconfirmation session found.";
             } elseif ($activeSession['initiated_by'] !== $adminEmail) {
                 $_SESSION['error'] = "Only {$activeSession['initiated_by']} can end this session.";
             } else {
@@ -312,7 +320,7 @@ class inventoryassignment extends Controller
                 $_SESSION['success'] = "Reconfirmation session ended.";
             }
         }
-    
+
         header("Location: " . URL . "users/getUsers?");
         exit;
     }

@@ -169,13 +169,19 @@ function isDropdownActive($pages, $current_page) {
 
             <?php if ($role === 'admin' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive(['unassignedItems', 'assignedItems'], $current_page); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['unassignedItems', 'assignedItems','dashboard','reconfirmationReport'], $current_page); ?>"
                        href="#" data-bs-toggle="dropdown">ASSETS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryreturn/unassignedItems"
                            class="dropdown-item <?php echo isActive('unassignedItems', $current_page); ?>">In-Stock</a>
                         <a href="<?php echo URL; ?>inventoryreturn/assignedItems"
                            class="dropdown-item <?php echo isActive('assignedItems', $current_page); ?>">In-Use</a>
+                        <a href="<?php echo URL; ?>dashboard"
+                           class="dropdown-item <?php echo isActive('dashboard', $current_page); ?>">Staff
+                            Dashboard</a>
+                        <a href="<?php echo URL; ?>inventoryassignment/reconfirmationReport"
+                           class="dropdown-item <?php echo isActive('reconfirmationReport', $current_page); ?>">Confirmation
+                            Reports</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -201,7 +207,7 @@ function isDropdownActive($pages, $current_page) {
 
             <?php if ($role === 'admin' || $role === 'staff' || $role === 'super_admin'): ?>
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo isActive(['staffassignments', 'staffreturneditems','dashboard','reconfirmationReport'], $current_page); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo isActive(['staffassignments', 'staffreturneditems'], $current_page); ?>"
                        href="#" data-bs-toggle="dropdown">REPORTS</a>
                     <div class="dropdown-menu">
                         <a href="<?php echo URL; ?>inventoryassignment/staffassignments"
@@ -210,12 +216,6 @@ function isDropdownActive($pages, $current_page) {
                         <a href="<?php echo URL; ?>inventoryreturn/staffreturneditems"
                            class="dropdown-item <?php echo isActive('staffreturneditems', $current_page); ?>">Staff
                             Returned Items</a>
-                        <a href="<?php echo URL; ?>dashboard"
-                           class="dropdown-item <?php echo isActive('dashboard', $current_page); ?>">Staff
-                            Dashboard</a>
-                            <a href="<?php echo URL; ?>inventoryassignment/reconfirmationReport"
-                           class="dropdown-item <?php echo isActive('reconfirmationReport', $current_page); ?>">Confirmation
-                            Reports</a>
                     </div>
                 </div>
             <?php endif; ?>
