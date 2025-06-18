@@ -119,8 +119,7 @@ class Users extends Controller
     $user = $this->model->get_user_by_email($email);
 
     if ($user) {
-        $name = ucwords(explode('@', $user->email)[0]);
-
+        $name = ucwords(str_replace(['.', '_', '-'], ' ', explode('@', $user->email)[0]));
         echo json_encode([
             'name' => $name,
             'username' => $user->email, 
