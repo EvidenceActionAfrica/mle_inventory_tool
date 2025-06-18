@@ -257,7 +257,7 @@ function isDropdownActive($pages, $current_page) {
             <?php 
             if (isset($_SESSION['user_email'])) {
                 $user_email = $_SESSION['user_email'];
-                $user_name = ucwords(explode('@', $user_email)[0]);
+               $user_name = ucwords(str_replace(['.', '_', '-'], ' ', explode('@', $user_email)[0]));
                 echo "
                     <div style='position: relative; display: inline-block;'>
                         <span id='profileTrigger' class='mb-0' style='cursor: pointer;' onclick='toggleProfileCard()'>
