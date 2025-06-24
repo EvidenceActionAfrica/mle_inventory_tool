@@ -17,8 +17,14 @@
     </div>
 </div>
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <i class="fas fa-tasks me-1"></i>
+        <form action="<?= URL ?>inventoryassignment/acknowledgeAll" method="POST" 
+            onsubmit="return confirm('Are you sure you want to acknowledge all assigned items? This action cannot be undone.');">
+            <button type="submit" class="add-btn">
+                Acknowledge All Items
+            </button>
+        </form>
     </div>
     <div class="card-body table-responsive">
         <?php if (!empty($_GET['success'])): ?>
@@ -36,6 +42,7 @@
                     <th>Email</th>
                     <th>Description</th>
                     <th>Serial Number</th>
+                    <th>Tag Number</th>
                     <th>Date Assigned</th>
                     <th>Action</th>
                 </tr>
@@ -49,9 +56,11 @@
                             <td><?= htmlspecialchars($assignment['email']); ?></td>
                             <td><?= htmlspecialchars($assignment['description']); ?></td>
                             <td><?= htmlspecialchars($assignment['serial_number']); ?></td>
+                            <td><?= htmlspecialchars(isset($assignment['tag_number']) ? $assignment['tag_number'] : '') ?></td>
                             <td><?= htmlspecialchars($assignment['date_assigned']); ?></td>
                             <td>
-                                <form action="<?= URL ?>inventoryassignment/acknowledge" method="POST" class="d-inline">
+                                <form action="<?= URL ?>inventoryassignment/acknowledge" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Are you sure you want to acknowledge this item?');">
                                     <input type="hidden" name="assignment_id" value="<?= $assignment['id'] ?>">
                                     <button type="submit" class="btn btn-success btn-sm">Acknowledge</button>
                                 </form>

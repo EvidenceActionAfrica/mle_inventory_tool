@@ -127,23 +127,6 @@ class inventoryassignment extends Controller
             }
         }
     }
-    //search button
-    public function search() {
-        if (!isset($_GET['search']) || empty(trim($_GET['search']))) {
-            header("Location: " . URL . "inventoryassignment");
-            exit();
-        }
-        if ($this->model === null) {
-            echo "Model not loaded properly!";
-            exit();
-        }
-        $search_query = trim($_GET['search']);
-        $assignments = $this->model->searchAssignments($search_query);
-    
-        require APP . 'view/_templates/header.php';
-        require APP . 'view/_templates/sessions.php';
-        require APP . 'view/inventory_assignments/index.php'; 
-    }
     
     // Show pending assignments for the logged-in user
     public function pending()
@@ -195,6 +178,35 @@ class inventoryassignment extends Controller
 
             header("Location: " . URL . "inventoryassignment/pending");
             exit();
+    }
+
+    //bulk acknowledging
+    public function acknowledgeAll()
+    {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        session_start();
+
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+
+        $user_email = $_SESSION['user_email'];
+
+        $acknowledged = $this->model->acknowledgeAllAssignmentsByUser($user_email);
+
+        if ($acknowledged) {
+            $_SESSION['success_message'] = "All items acknowledged successfully!";
+        } else {
+            $_SESSION['error_message'] = "Failed to acknowledge items. Please try again.";
+        }
+
+        header("Location: " . URL . "inventoryassignment/pending");
+        exit();
     }
 
     //report

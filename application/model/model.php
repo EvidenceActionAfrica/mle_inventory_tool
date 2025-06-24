@@ -396,6 +396,99 @@ class Model
         $query->execute([':serial_number' => $serial_number]);
         return $query->fetchColumn() > 0;
     }
+    //export inventorylist
+    public function getAllInventoryItems() 
+    {
+        $sql = "SELECT 
+                    category_id,
+                    description,
+                    serial_number,
+                    tag_number,
+                    acquisition_date,
+                    acquisition_cost,
+                    warranty_date,
+                    location,
+                    custodian,
+                    created_at
+                FROM inventory";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+        ///reupload edited sheet
+    public function bulkInsertFromExport($items) 
+    {
+        $sql = "INSERT INTO inventory (
+                    category_id,
+                    description,
+                    serial_number,
+                    tag_number,
+                    acquisition_date,
+                    acquisition_cost,
+                    warranty_date,
+                    location,
+                    custodian,
+                    created_at
+                ) VALUES (
+                    :category_id,
+                    :description,
+                    :serial_number,
+                    :tag_number,
+                    :acquisition_date,
+                    :acquisition_cost,
+                    :warranty_date,
+                    :location,
+                    :custodian,
+                    :created_at
+                )";
+
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($items as $item) {
+            $stmt->bindValue(':category_id', $item['category_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':description', $item['description'], PDO::PARAM_STR);
+            $stmt->bindValue(':serial_number', $item['serial_number'], PDO::PARAM_STR);
+            $stmt->bindValue(':tag_number', $item['tag_number'] ?: null, $item['tag_number'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $stmt->bindValue(':acquisition_date', $item['acquisition_date'], PDO::PARAM_STR);
+            $stmt->bindValue(':acquisition_cost', $item['acquisition_cost'], PDO::PARAM_STR);
+            $stmt->bindValue(':warranty_date', $item['warranty_date'] ?: null, $item['warranty_date'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $stmt->bindValue(':location', $item['location'], PDO::PARAM_INT);
+            $stmt->bindValue(':custodian', $item['custodian'], PDO::PARAM_INT);
+            $stmt->bindValue(':created_at', $item['created_at'], PDO::PARAM_STR);
+
+            $stmt->execute();
+        }
+
+        return true;
+    }
+
+    public function updateItemBySerialNumber($serial_number, $item) 
+    {
+        $sql = "UPDATE inventory SET
+                    category_id = :category_id,
+                    description = :description,
+                    tag_number = :tag_number,
+                    acquisition_date = :acquisition_date,
+                    acquisition_cost = :acquisition_cost,
+                    warranty_date = :warranty_date,
+                    location = :location,
+                    custodian = :custodian,
+                    created_at = :created_at
+                WHERE serial_number = :serial_number";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':category_id', $item['category_id'], PDO::PARAM_INT);
+        $stmt->bindValue(':description', $item['description'], PDO::PARAM_STR);
+        $stmt->bindValue(':tag_number', $item['tag_number'] ?: null, $item['tag_number'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':acquisition_date', $item['acquisition_date'], PDO::PARAM_STR);
+        $stmt->bindValue(':acquisition_cost', $item['acquisition_cost'], PDO::PARAM_STR);
+        $stmt->bindValue(':warranty_date', $item['warranty_date'] ?: null, $item['warranty_date'] ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':location', $item['location'], PDO::PARAM_INT);
+        $stmt->bindValue(':custodian', $item['custodian'], PDO::PARAM_INT);
+        $stmt->bindValue(':created_at', $item['created_at'], PDO::PARAM_STR);
+        $stmt->bindValue(':serial_number', $serial_number, PDO::PARAM_STR);
+        return $stmt->execute();
+    }
 
     
     // Get a single inventory item by ID
@@ -723,60 +816,80 @@ class Model
         return "Items successfully assigned!";
     }
 
-    //add single assignment
+    // //add single assignment
     public function assignSingleItem($user_id, $item_id, $date_assigned, $manager_email)
     {
         $created = date('Y-m-d H:i:s');
-        
-        // Get manager email
+
+        // 1. Validate Manager
         $manager = $this->getManagerEmail($manager_email);
         if (!$manager) {
-            return "Invalid manager email: " . htmlspecialchars($manager_email);
+            return ['type' => 'error', 'message' => "Invalid manager email: " . htmlspecialchars($manager_email)];
         }
         $managed_by = strtok($manager['email'], '@');
-        
-        // Get user information
-        $userSql = "SELECT 
-                        email AS name,
-                        email,
-                        CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role
-                    FROM staff_login
-                    WHERE id = :user_id";
-    
+
+        // 2. Get User Info
+        $userSql = "SELECT email AS name, email, CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role FROM staff_login WHERE id = :user_id";
         $userQuery = $this->db->prepare($userSql);
         $userQuery->execute([':user_id' => $user_id]);
         $user = $userQuery->fetch(PDO::FETCH_ASSOC);
-    
         if (!$user) {
-            return "User not found.";
+            return ['type' => 'error', 'message' => "User not found."];
         }
-    
-        // Get item information
+
+        // 3. Get Item Info
         $itemSql = "SELECT serial_number, tag_number FROM inventory WHERE id = :item_id";
         $itemQuery = $this->db->prepare($itemSql);
         $itemQuery->execute([':item_id' => $item_id]);
         $item = $itemQuery->fetch(PDO::FETCH_ASSOC);
-    
         if (!$item) {
-            return "Item with ID $item_id not found in inventory.";
+            return ['type' => 'error', 'message' => "Item with ID $item_id not found in inventory."];
         }
-    
-        // Check if item is already assigned
+
+        // 4. Get current assignment ID for this item (if any)
+        $assignmentSql = "SELECT id FROM inventory_assignment WHERE item = :item_id AND acknowledgment_status IN ('pending', 'acknowledged') ORDER BY created_at DESC LIMIT 1";
+        $assignmentQuery = $this->db->prepare($assignmentSql);
+        $assignmentQuery->execute([':item_id' => $item_id]);
+        $assignment = $assignmentQuery->fetch(PDO::FETCH_ASSOC);
+
+        $assignment_id = $assignment['id'] ?? null;
+
+        // 5. Check if item is lost or unrepairable damaged via inventory_returned linked by assignment_id
+        if ($assignment_id) {
+            $returnSql = "SELECT item_state, repair_status 
+                        FROM inventory_returned 
+                        WHERE assignment_id = :assignment_id 
+                        AND status = 'approved' 
+                        ORDER BY approved_date DESC 
+                        LIMIT 1";
+            $returnQuery = $this->db->prepare($returnSql);
+            $returnQuery->execute([':assignment_id' => $assignment_id]);
+            $returnStatus = $returnQuery->fetch(PDO::FETCH_ASSOC);
+
+            if ($returnStatus) {
+                if ($returnStatus['item_state'] === 'lost') {
+                    return ['type' => 'warning', 'message' => "Cannot assign. The item is marked as lost."];
+                } elseif ($returnStatus['item_state'] === 'damaged' && $returnStatus['repair_status'] === 'Unrepairable') {
+                    return ['type' => 'warning', 'message' => "Cannot assign. Item is marked as retired."];
+                }
+            }
+        }
+
+        // 6. Check if item is already assigned (acknowledgment_status pending or acknowledged)
         $checkSql = "SELECT COUNT(*) FROM inventory_assignment 
-                    WHERE item = :item_id AND acknowledgment_status IN ('pending', 'approved')";
+                    WHERE item = :item_id AND acknowledgment_status IN ('pending', 'acknowledged')";
         $checkQuery = $this->db->prepare($checkSql);
         $checkQuery->execute([':item_id' => $item_id]);
         if ($checkQuery->fetchColumn() > 0) {
-            return "Item with ID $item_id is already assigned.";
+            return ['type' => 'error', 'message' => "The item is already assigned."];
         }
-    
-        // Insert assignment into inventory_assignment table
+
+        // 7. Insert Assignment
         try {
             $sql = "INSERT INTO inventory_assignment 
                         (name, email, role, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
                     VALUES 
                         (:name, :email, :role, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
-            
             $query = $this->db->prepare($sql);
             $parameters = [
                 ':name' => $user['name'],
@@ -788,17 +901,16 @@ class Model
                 ':managed_by' => $managed_by,
                 ':date_assigned' => $date_assigned
             ];
-    
+
             $success = $query->execute($parameters);
-    
             if ($success) {
-                return "Item assigned successfully!";
+                return ['type' => 'success', 'message' => "Item assigned successfully!"];
             } else {
                 $error = $query->errorInfo();
-                return "Assignment failed: " . implode(" | ", $error);
+                return ['type' => 'error', 'message' => "Assignment failed: " . implode(" | ", $error)];
             }
         } catch (PDOException $e) {
-            return "DB Error: " . $e->getMessage();
+            return ['type' => 'error', 'message' => "DB Error: " . $e->getMessage()];
         }
     }
     
@@ -1006,6 +1118,24 @@ class Model
             return $query->rowCount(); // Number of rows updated
         }
 
+    //bulk acknowledging of items
+    public function acknowledgeAllAssignmentsByUser($user_email)
+    {
+        $sql = "UPDATE inventory_assignment
+                SET acknowledgment_status = 'acknowledged',
+                    confirmation_date = NOW(),
+                    updated_at = NOW()
+                WHERE email = :email
+                AND acknowledgment_status = 'pending'
+                AND id NOT IN (
+                    SELECT assignment_id FROM inventory_returned
+                    WHERE status = 'approved'
+                        AND return_date IS NOT NULL
+                )";
+
+        $query = $this->db->prepare($sql);
+        return $query->execute([':email' => $user_email]);
+    }
         ///get items assigned to a logged in user
     public function getApprovedAssignmentsByLoggedInUser($user_email)
         {

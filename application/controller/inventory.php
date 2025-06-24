@@ -255,30 +255,31 @@ class Inventory extends Controller
     //single item assigning
     public function assignSingle()
     {
-        
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
+
         session_start();
-    
+
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = intval($_POST['user_id']);
-            $item_id = intval($_POST['item_id']); 
+            $item_id = intval($_POST['item_id']);
             $date_assigned = $_POST['date_assigned'];
             $manager_email = $_POST['manager_email'];
 
             $result = $this->model->assignSingleItem($user_id, $item_id, $date_assigned, $manager_email);
 
-            if (strpos($result, 'successfully') !== false) {
-                header("Location: " . URL . "inventory/index?success=" . urlencode($result));
-            } else {
-                header("Location: " . URL . "inventory/index?error=" . urlencode($result));
-            }
+            // Redirect with message type and content
+            $messageType = $result['type'] ?? 'error';
+            $message = urlencode($result['message'] ?? 'Unknown error');
+
+            header("Location: " . URL . "inventory/index?$messageType=" . $message);
             exit();
         }
     }
@@ -425,6 +426,162 @@ class Inventory extends Controller
         fclose($output);
         exit();
     }
+
+    //export inventory
+    public function exportInventoryCSV() {
+        if ($this->model === null) {
+            echo "Model not loaded properly!";
+            exit();
+        }
+
+        session_start();
+
+        if (!isset($_SESSION['user_email'])) {
+            header("Location: " . URL . "login");
+            exit();
+        }
+    $items = $this->model->getAllInventoryItems();
+
+    // CSV headers
+    $csvHeaders = [
+        'Category ID', 'Description', 'Serial Number', 'Tag Number',
+        'Acquisition Date', 'Acquisition Cost', 'Warranty Date',
+        'Location', 'Custodian', 'Created At'
+    ];
+
+    // Output headers for download
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="inventory_export_' . date('Y-m-d') . '.csv"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $output = fopen('php://output', 'w');
+    // Output column headings
+    fputcsv($output, $csvHeaders);
+
+    // Output data rows
+    foreach ($items as $item) {
+        fputcsv($output, [
+            $item['category_id'],
+            $item['description'],
+            $item['serial_number'],
+            $item['tag_number'],
+            $item['acquisition_date'],
+            $item['acquisition_cost'],
+            $item['warranty_date'],
+            $item['location'],
+            $item['custodian'],
+            $item['created_at']
+        ]);
+    }
+    fclose($output);
+    exit;  // Stop further output after CSV download
+}
+
+//re-uploading
+public function reuploadFromExportCSV()
+{
+    if ($this->model === null) {
+        echo "Model not loaded properly!";
+        exit();
+    }
+
+    session_start();
+    if (!isset($_SESSION['user_email'])) {
+        header("Location: " . URL . "login");
+        exit();
+    }
+
+    if (!isset($_FILES['upload_file']) || $_FILES['upload_file']['error'] !== UPLOAD_ERR_OK) {
+        header("Location: " . URL . "inventory/index?" . http_build_query([
+            'status' => 'fail',
+            'message' => 'Upload failed'
+        ]));
+        exit();
+    }
+
+    $file = $_FILES['upload_file']['tmp_name'];
+    $handle = fopen($file, "r");
+    if (!$handle) {
+        header("Location: " . URL . "inventory/index?" . http_build_query([
+            'status' => 'fail',
+            'message' => 'Cannot open file'
+        ]));
+        exit();
+    }
+
+    $rowNumber = 1;
+    $insertCount = 0;
+    $updateCount = 0;
+    $errors = [];
+
+    $header = fgetcsv($handle); // Skip header row
+
+    while (($data = fgetcsv($handle)) !== false) {
+        $rowNumber++;
+
+        $category_id = trim($data[0] ?? '');
+        $description = trim($data[1] ?? '');
+        $serial_number = trim($data[2] ?? '');
+        $tag_number = trim($data[3] ?? '');
+        $acquisition_date = trim($data[4] ?? '');
+        $acquisition_cost = trim($data[5] ?? '');
+        $warranty_date = trim($data[6] ?? '');
+        $location = trim($data[7] ?? '');
+        $custodian = trim($data[8] ?? '');
+        $created_at = trim($data[9] ?? '');
+
+        $rowErrors = [];
+
+        // Validate required fields
+        if (empty($category_id) || empty($description) || empty($serial_number) ||
+            empty($acquisition_date) || empty($acquisition_cost) ||
+            empty($location) || empty($custodian) || empty($created_at)) {
+            $rowErrors[] = "Missing required field(s)";
+        }
+
+        // Prepare item
+        $item = [
+            'category_id' => $category_id,
+            'description' => $description,
+            'serial_number' => $serial_number,
+            'tag_number' => $tag_number,
+            'acquisition_date' => $acquisition_date,
+            'acquisition_cost' => $acquisition_cost,
+            'warranty_date' => $warranty_date,
+            'location' => $location,
+            'custodian' => $custodian,
+            'created_at' => $created_at
+        ];
+
+        if (empty($rowErrors)) {
+            if ($this->model->isSerialNumberExists($serial_number)) {
+                $this->model->updateItemBySerialNumber($serial_number, $item);
+                $updateCount++;
+            } else {
+                $this->model->bulkInsertFromExport([$item]);
+                $insertCount++;
+            }
+        } else {
+            $errors[] = "Row $rowNumber: " . implode(', ', $rowErrors);
+        }
+    }
+
+    fclose($handle);
+
+    $message = "$insertCount new item(s) added. $updateCount item(s) updated.";
+    if (!empty($errors)) {
+        $message .= " " . count($errors) . " row(s) failed: " . implode(" | ", $errors);
+    }
+
+    $status = ($insertCount + $updateCount > 0) ? 'success' : 'fail';
+
+    header("Location: " . URL . "inventory/index?" . http_build_query([
+        'status' => $status,
+        'message' => $message
+    ]));
+    exit();
+}
 
 
 }

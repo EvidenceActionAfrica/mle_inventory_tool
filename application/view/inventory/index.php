@@ -16,31 +16,60 @@
                 This is a collection of all the assets in the organisation and their details.
             </div>
         </div>
-        <!-- success/error message -->
-        <?php if (isset($_GET['update']) && isset($_GET['message'])): ?>
-            <?php
-                // Set background color based on 'update' value
-                $bgColor = $_GET['update'] === 'success' ? 'green' : 'red';
-                $textColor = 'white'; // White text for better contrast
-            ?>
-            <div id="messageDiv" style="background-color: <?= $bgColor; ?>; color: <?= $textColor; ?>; padding: 10px; text-align: center;">
-                <?= htmlspecialchars(urldecode($_GET['message'])); ?>
-            </div>
+    <!-- success/error message (using 'update' and 'message') -->
+    <?php if (isset($_GET['update']) && isset($_GET['message'])): ?>
+        <?php
+            // Set background color based on 'update' value
+            $bgColor = $_GET['update'] === 'success' ? 'green' : 'red';
+            $textColor = 'white'; 
+        ?>
+        <div id="messageDiv" style="background-color: <?= $bgColor; ?>; color: <?= $textColor; ?>; padding: 10px; text-align: center;">
+            <?= htmlspecialchars(urldecode($_GET['message'])); ?>
+        </div>
 
-            <!-- JavaScript to hide the message after 3 seconds -->
-            <script>
-                // Wait for the DOM to be fully loaded
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Set a timeout to hide the message after 3 seconds (3000ms)
-                    setTimeout(function() {
-                        const messageDiv = document.getElementById('messageDiv');
-                        if (messageDiv) {
-                            messageDiv.style.display = 'none'; // Hide the message
-                        }
-                    }, 10000);
-                });
-            </script>
-        <?php endif; ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    const messageDiv = document.getElementById('messageDiv');
+                    if (messageDiv) {
+                        messageDiv.style.display = 'none';
+                    }
+                }, 10000);
+            });
+        </script>
+    <?php
+    // Else show assignSingle messages (success/error/warning)
+    elseif (
+        isset($_GET['success']) || isset($_GET['error']) || isset($_GET['warning'])
+    ):
+        $messageType = null;
+        $messageContent = null;
+
+        if (isset($_GET['success'])) {
+            $messageType = 'green';
+            $messageContent = urldecode($_GET['success']);
+        } elseif (isset($_GET['error'])) {
+            $messageType = 'red';
+            $messageContent = urldecode($_GET['error']);
+        } elseif (isset($_GET['warning'])) {
+            $messageType = 'orange';
+            $messageContent = urldecode($_GET['warning']);
+        }
+    ?>
+    <div id="messageDiv" style="background-color: <?= $messageType; ?>; color: white; padding: 10px; text-align: center;">
+        <?= htmlspecialchars($messageContent); ?>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const messageDiv = document.getElementById('messageDiv');
+                if (messageDiv) {
+                    messageDiv.style.display = 'none';
+                }
+            }, 10000);
+        });
+    </script>
+<?php endif; ?>
 
      
         <!-- Card for inventory list -->

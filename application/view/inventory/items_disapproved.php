@@ -49,7 +49,7 @@
                     <tr>
                         <td><?= htmlspecialchars($item['description']) ?></td>
                         <td><?= htmlspecialchars($item['serial_number']) ?></td>
-                        <td><?= htmlspecialchars($item['tag_number']) ?></td>
+                        <td><?= htmlspecialchars(isset($item['tag_number']) ? $item['tag_number'] : '') ?></td>
                         <td><?= htmlspecialchars($item['category']) ?></td>
                         <td><?= htmlspecialchars($item['disapproval_comment']) ?></td>
                         <td><?= htmlspecialchars(date('d-M-Y', strtotime($item['disapproved_date']))) ?></td>

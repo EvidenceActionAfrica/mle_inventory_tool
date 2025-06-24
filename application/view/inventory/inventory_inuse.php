@@ -48,7 +48,7 @@
                                     <td><?= htmlspecialchars($item['category']) ?></td>
                                     <td><?= htmlspecialchars($item['description']) ?></td>
                                     <td><?= htmlspecialchars($item['serial_number']) ?></td>
-                                    <td><?= htmlspecialchars($item['tag_number']) ?></td>
+                                    <td><?= htmlspecialchars(isset($item['tag_number']) ? $item['tag_number'] : '') ?></td>
                                     <td><?= htmlspecialchars($item['date_assigned']) ?></td>
                                     <td><?= htmlspecialchars($item['managed_by']) ?></td>
                                 </tr>

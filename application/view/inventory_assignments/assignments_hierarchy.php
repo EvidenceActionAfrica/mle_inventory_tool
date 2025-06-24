@@ -45,7 +45,6 @@
                         <th>Date Assigned</th>
                         <th>Managed By</th>
                         <th>Acknowledgment Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,20 +63,6 @@
                                     <span class="<?= $assignment['acknowledgment_status'] === 'acknowledged' ? 'badge bg-success' : 'badge bg-warning text-dark'; ?>">
                                         <?= ucfirst($assignment['acknowledgment_status'] ?? 'Pending'); ?>
                                     </span>
-                                </td>
-                                <td>
-                                    <?php if ($assignment['acknowledgment_status'] === 'pending'): ?>
-                                        <a href="<?= URL ?>inventoryassignment/edit/<?= $assignment['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-
-                                        <form action="<?= URL; ?>inventoryassignment/delete" method="POST" 
-                                            onsubmit="return confirm('Are you sure you want to delete this assignment?');" 
-                                            style="display:inline;">
-                                            <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']); ?>">
-                                            <button type="submit" name="delete" class="btn btn-sm btn-outline-danger">Delete</button>
-                                        </form>
-                                    <?php else: ?>
-                                        <span class="text-muted">N/A</span>
-                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
