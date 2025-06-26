@@ -46,7 +46,7 @@
                         <th>Description</th>
                         <th>Serial Number</th>
                         <th>Tag Number</th>
-                        <th>Return Date</th>
+                        <th>Reported Date</th>
                     </tr>
                 </thead>
                 <tbody>

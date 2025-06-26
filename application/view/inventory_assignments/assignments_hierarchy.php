@@ -22,7 +22,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fas fa-table me-1"></i></span>           
             <div class="col-md-4 text-end">
-                <form action="<?= URL; ?>InventoryAssignment/downloadAssignments" method="GET" class="mb-0">
+                <form action="<?= URL; ?>inventoryassignment/downloadAssignments" method="GET" class="mb-0">
                     <button type="submit" class="add-btn" 
                         style="background-color: #05545a; border-color: #05545a;">
                         Download

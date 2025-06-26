@@ -100,6 +100,8 @@
                 </form>
             </div>
         </div>
+        
+
 
             <div class="card-body table-responsive">
                 <!-- Inventory Table -->
@@ -175,8 +177,15 @@
                             <select class="form-control" name="user_id" required>
                                 <option value="">Select User</option>
                                 <?php foreach ($users as $user): ?>
+                                    <?php
+                                        $emailPrefix = strtok($user['email'], '@'); // e.g., rita.kogi
+                                        $parts = preg_split('/[._]/', $emailPrefix);
+                                        $formattedName = implode(' ', array_map(function($part) {
+                                            return ucfirst(strtolower($part));
+                                        }, $parts));
+                                    ?>
                                     <option value="<?= htmlspecialchars($user['id']); ?>">
-                                        <?= htmlspecialchars(strtok($user['email'], '@')); ?>
+                                        <?= htmlspecialchars($formattedName); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -188,8 +197,15 @@
                             <select class="form-control" name="manager_email" required>
                                 <option value="">Select Manager</option>
                                 <?php foreach ($managers as $manager): ?>
+                                    <?php
+                                        $emailPrefix = strtok($manager['email'], '@'); // e.g., rita.kogi
+                                        $parts = preg_split('/[._]/', $emailPrefix);
+                                        $formattedName = implode(' ', array_map(function($part) {
+                                            return ucfirst(strtolower($part));
+                                        }, $parts));
+                                    ?>
                                     <option value="<?= htmlspecialchars($manager['email']); ?>">
-                                        <?= htmlspecialchars(strtok($manager['email'], '@')); ?>
+                                        <?= htmlspecialchars($formattedName); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

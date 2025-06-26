@@ -553,35 +553,18 @@ class Model
         return $query->execute($parameters);
     }
 
-    //search items
-    public function searchItems($search_query)
-    {
-        $sql = "SELECT inventory.*, categories.category AS category
-            FROM inventory
-            LEFT JOIN categories ON inventory.category_id = categories.id
-            WHERE inventory.description LIKE :search_query1
-            OR inventory.serial_number LIKE :search_query2
-            OR inventory.tag_number LIKE :search_query3";
-
-        $stmt = $this->db->prepare($sql);
-        $search_param = '%' . $search_query . '%';
-        
-        // Bind each placeholder separately
-        $stmt->bindParam(':search_query1', $search_param, PDO::PARAM_STR);
-        $stmt->bindParam(':search_query2', $search_param, PDO::PARAM_STR);
-        $stmt->bindParam(':search_query3', $search_param, PDO::PARAM_STR);
-        
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
             //inventory assgnment model
     // Fetch all assignments
     public function getAllAssignments() {
         $sql = "SELECT 
                     ia.id,
-                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 2)),
+                        ' ',
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 2))
+                    ) AS user_name,
                     ia.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
@@ -612,41 +595,6 @@ class Model
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
       
-    //searchbutton
-    public function searchAssignments($query) {
-        $sql = "SELECT 
-                    ia.id,
-                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                           LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS user_name, 
-                    ia.email,
-                    sl.department,
-                    sl.position,
-                    ia.location,
-                    i.category_id,
-                    i.description,
-                    ia.serial_number,
-                    ia.tag_number,
-                    ia.date_assigned,
-                    ia.managed_by,
-                    ia.acknowledgment_status,
-                    ia.created_at,
-                    ia.updated_at
-                FROM inventory_assignment ia
-                LEFT JOIN inventory i ON ia.item = i.id
-                LEFT JOIN staff_login sl ON ia.email = sl.email
-                WHERE 
-                    LOWER(SUBSTRING_INDEX(ia.email, '@', 1)) LIKE LOWER(:query)
-                    OR ia.serial_number LIKE :query
-                    OR ia.tag_number LIKE :query
-                    OR ia.acknowledgment_status LIKE :query";
-    
-        $query = "%" . $query . "%";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':query', $query);
-        $stmt->execute();
-    
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
       
     // Fetch all unassigned items (not pending or approved)
     public function getUnassignedInventory()
@@ -751,14 +699,16 @@ class Model
     // Assign items to users
     public function addAssignment($user_id, $item_ids, $date_assigned, $manager_email)
     {
+        // Get manager email
         $manager = $this->getManagerEmail($manager_email);
         if (!$manager) {
             return "Invalid manager email: " . htmlspecialchars($manager_email);
         }
-        $managed_by = ucfirst(strtok($manager['email'], '@'));
+        $managed_by = implode(' ', array_map(function ($part) {
+            return ucfirst(strtolower($part));
+        }, preg_split('/[._]/', strtok($manager['email'], '@'))));
 
         $userSql = "SELECT 
-                        email AS name,
                         email,
                         CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role
                     FROM staff_login
@@ -772,7 +722,12 @@ class Model
             return "User not found.";
         }
 
+        $formattedUserName = implode(' ', array_map(function ($part) {
+            return ucfirst(strtolower($part));
+        }, preg_split('/[._]/', strtok($user['email'], '@'))));
+
         foreach ($item_ids as $item_id) {
+            // Get item details
             $itemSql = "SELECT serial_number, tag_number FROM inventory WHERE id = :item_id";
             $itemQuery = $this->db->prepare($itemSql);
             $itemQuery->execute([':item_id' => $item_id]);
@@ -782,6 +737,7 @@ class Model
                 return "Item with ID $item_id not found in inventory.";
             }
 
+            // Check if item already assigned
             $checkSql = "SELECT COUNT(*) FROM inventory_assignment 
                         WHERE item = :item_id AND acknowledgment_status IN ('pending', 'approved')";
             $checkQuery = $this->db->prepare($checkSql);
@@ -790,14 +746,9 @@ class Model
                 return "Item with ID $item_id is already assigned.";
             }
 
-            $sql = "INSERT INTO inventory_assignment 
-                        (name, email, role, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
-                    VALUES 
-                        (:name, :email, :role, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
-
-            $query = $this->db->prepare($sql);
+            // Prepare parameters with formatted name and manager
             $parameters = [
-                ':name' => ucfirst(strtok($user['email'], '@')),
+                ':name' => $formattedUserName,
                 ':email' => $user['email'],
                 ':role' => $user['role'],
                 ':item_id' => $item_id,
@@ -806,7 +757,13 @@ class Model
                 ':managed_by' => $managed_by,
                 ':date_assigned' => $date_assigned
             ];
-
+            // Insert into inventory_assignment
+            $sql = "INSERT INTO inventory_assignment 
+                        (name, email, role, item, serial_number, tag_number, managed_by, acknowledgment_status, created_at, updated_at, date_assigned)
+                    VALUES 
+                        (:name, :email, :role, :item_id, :serial_number, :tag_number, :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
+            
+            $query = $this->db->prepare($sql);
             if (!$query->execute($parameters)) {
                 $errorInfo = $query->errorInfo();
                 return "Failed to assign item with ID $item_id. Error: " . $errorInfo[2];
@@ -826,7 +783,7 @@ class Model
         if (!$manager) {
             return ['type' => 'error', 'message' => "Invalid manager email: " . htmlspecialchars($manager_email)];
         }
-        $managed_by = strtok($manager['email'], '@');
+        $managed_by = implode(' ', array_map('ucfirst', explode('.', strtok($manager['email'], '@'))));
 
         // 2. Get User Info
         $userSql = "SELECT email AS name, email, CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role FROM staff_login WHERE id = :user_id";
@@ -917,7 +874,18 @@ class Model
     //get manageers
     public function getManagers()
     {
-        $sql = "SELECT email FROM staff_login";
+        $sql = "SELECT 
+                    id,
+                    email,
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', 1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', 1), 2)),
+                        ' ',
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', -1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', -1), 2))
+                    ) AS name
+                FROM staff_login";
+
         $query = $this->db->prepare($sql);
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
@@ -958,104 +926,123 @@ class Model
     }
 
     // Update assignment only if acknowledgment_status is pending
-    public function updateAssignment($id, $updatedData, $inventory_ids)
-    {
-        // Fetch current assignment details
-        $existingAssignmentSql = "SELECT email FROM inventory_assignment WHERE id = :id";
-        $existingStmt = $this->db->prepare($existingAssignmentSql);
-        $existingStmt->execute([':id' => $id]);
-        $existingAssignment = $existingStmt->fetch(PDO::FETCH_ASSOC);
-    
-        if (!$existingAssignment) {
-            return "Assignment not found.";
-        }
-    
-        // Get user details
-        $userSql = "SELECT 
-                        email AS name,
-                        email,
-                        CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role
-                    FROM staff_login
-                    WHERE id = :user_id";
-    
-        $userQuery = $this->db->prepare($userSql);
-        $userQuery->execute([':user_id' => $updatedData['user_id']]);
-        $user = $userQuery->fetch(PDO::FETCH_ASSOC);
-    
-        if (!$user) {
-            return "User not found.";
-        }
-    
-        // Get manager details
-        $manager = $this->getManagerEmail($updatedData['managed_by']);
-        if (!$manager) {
-            return "Invalid manager email: " . htmlspecialchars($updatedData['managed_by']);
-        }
-        $managed_by = strtok($manager['email'], '@');
-    
-        // Update assignment details
-        $updateSql = "UPDATE inventory_assignment 
-                      SET name = :name, email = :email, role = :role, 
-                          location = :location, managed_by = :managed_by, 
-                          date_assigned = :date_assigned, updated_at = NOW() 
-                      WHERE id = :id";
-    
-        $updateStmt = $this->db->prepare($updateSql);
-        $updateParams = [
-            ':id' => $id,
-            ':name' => $user['name'],
-            ':email' => $user['email'],
-            ':role' => $user['role'],
-            ':managed_by' => $managed_by,
-            ':date_assigned' => $updatedData['date_assigned']
-        ];
-    
-        if (!$updateStmt->execute($updateParams)) {
-            return "Failed to update assignment.";
-        }
-    
-        // Delete old inventory assignments
-        $deleteSql = "DELETE FROM inventory_assignment WHERE id = :id";
-        $deleteStmt = $this->db->prepare($deleteSql);
-        $deleteStmt->execute([':id' => $id]);
-    
-        // Insert new inventory assignments
-        foreach ($inventory_ids as $inventory_id) {
-            $itemSql = "SELECT serial_number, tag_number FROM inventory WHERE id = :item_id";
-            $itemQuery = $this->db->prepare($itemSql);
-            $itemQuery->execute([':item_id' => $inventory_id]);
-            $item = $itemQuery->fetch(PDO::FETCH_ASSOC);
-    
-            if (!$item) {
-                return "Item with ID $inventory_id not found in inventory.";
+    public function updateAssignment($assignment_id, $updatedData, $inventory_ids)
+        {
+            // Fetch existing assignment to verify it exists
+            $existingAssignmentSql = "SELECT email FROM inventory_assignment WHERE id = :id";
+            $existingStmt = $this->db->prepare($existingAssignmentSql);
+            $existingStmt->execute([':id' => $assignment_id]);
+            $existingAssignment = $existingStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$existingAssignment) {
+                return "Assignment not found.";
             }
-    
-            $insertSql = "INSERT INTO inventory_assignment 
-                              (name, email, role, item, serial_number, tag_number, managed_by, 
-                              acknowledgment_status, created_at, updated_at, date_assigned) 
-                          VALUES 
-                              (:name, :email, :role, :item_id, :serial_number, :tag_number, 
-                              :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
-    
-            $insertStmt = $this->db->prepare($insertSql);
-            $insertParams = [
-                ':name' => $user['name'],
-                ':email' => $user['email'],
-                ':role' => $user['role'],
-                ':item_id' => $inventory_id,
-                ':serial_number' => $item['serial_number'],
-                ':tag_number' => $item['tag_number'],
-                ':managed_by' => $managed_by,
-                ':date_assigned' => $updatedData['date_assigned']
-            ];
-    
-            if (!$insertStmt->execute($insertParams)) {
-                return "Failed to update item with ID $inventory_id.";
+
+            // Get user details by user_id
+            $userSql = "SELECT 
+                            email,
+                            CONCAT(COALESCE(department, 'N/A'), ' ', COALESCE(position, 'N/A')) AS role
+                        FROM staff_login
+                        WHERE id = :user_id";
+
+            $userQuery = $this->db->prepare($userSql);
+            $userQuery->execute([':user_id' => $updatedData['user_id']]);
+            $user = $userQuery->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                return "User not found.";
+            }
+
+            // Format user name like in addAssignment
+            $formattedUserName = implode(' ', array_map(function ($part) {
+                return ucfirst(strtolower($part));
+            }, preg_split('/[._]/', strtok($user['email'], '@'))));
+
+            // Get manager email and format manager name
+            $manager = $this->getManagerEmail($updatedData['managed_by']);
+            if (!$manager) {
+                return "Invalid manager email: " . htmlspecialchars($updatedData['managed_by']);
+            }
+            $managed_by = implode(' ', array_map(function ($part) {
+                return ucfirst(strtolower($part));
+            }, preg_split('/[._]/', strtok($manager['email'], '@'))));
+
+            // Begin transaction to safely update assignment and items
+            $this->db->beginTransaction();
+
+            try {
+                // Update assignment main details (name, email, role, managed_by, date_assigned)
+                $updateSql = "UPDATE inventory_assignment
+                            SET name = :name, email = :email, role = :role, managed_by = :managed_by, 
+                                date_assigned = :date_assigned, updated_at = NOW()
+                            WHERE id = :id";
+
+                $updateStmt = $this->db->prepare($updateSql);
+                $updateParams = [
+                    ':id' => $assignment_id,
+                    ':name' => $formattedUserName,
+                    ':email' => $user['email'],
+                    ':role' => $user['role'],
+                    ':managed_by' => $managed_by,
+                    ':date_assigned' => $updatedData['date_assigned']
+                ];
+
+                if (!$updateStmt->execute($updateParams)) {
+                    $this->db->rollBack();
+                    return "Failed to update assignment main details.";
+                }
+
+                $deleteSql = "DELETE FROM inventory_assignment WHERE id = :id";
+                $deleteStmt = $this->db->prepare($deleteSql);
+                $deleteStmt->execute([':id' => $assignment_id]);
+
+                // Insert new inventory assignments (one per item)
+                foreach ($inventory_ids as $item_id) {
+                    // Get item details
+                    $itemSql = "SELECT serial_number, tag_number FROM inventory WHERE id = :item_id";
+                    $itemQuery = $this->db->prepare($itemSql);
+                    $itemQuery->execute([':item_id' => $item_id]);
+                    $item = $itemQuery->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$item) {
+                        $this->db->rollBack();
+                        return "Item with ID $item_id not found in inventory.";
+                    }
+
+                    $insertSql = "INSERT INTO inventory_assignment 
+                                    (name, email, role, item, serial_number, tag_number, managed_by, 
+                                    acknowledgment_status, created_at, updated_at, date_assigned) 
+                                VALUES 
+                                    (:name, :email, :role, :item_id, :serial_number, :tag_number, 
+                                    :managed_by, 'pending', NOW(), NOW(), :date_assigned)";
+
+                    $insertStmt = $this->db->prepare($insertSql);
+                    $insertParams = [
+                        ':name' => $formattedUserName,
+                        ':email' => $user['email'],
+                        ':role' => $user['role'],
+                        ':item_id' => $item_id,
+                        ':serial_number' => $item['serial_number'],
+                        ':tag_number' => $item['tag_number'],
+                        ':managed_by' => $managed_by,
+                        ':date_assigned' => $updatedData['date_assigned']
+                    ];
+
+                    if (!$insertStmt->execute($insertParams)) {
+                        $this->db->rollBack();
+                        return "Failed to assign item with ID $item_id.";
+                    }
+                }
+
+                $this->db->commit();
+                return "Assignment successfully updated!";
+
+            } catch (Exception $e) {
+                $this->db->rollBack();
+                return "Database error: " . $e->getMessage();
             }
         }
-    
-        return "Assignment successfully updated!";
-    }
+
     
     // Delete assignment only if acknowledgment_status is pending
     public function deleteAssignment($id) {
@@ -1075,7 +1062,14 @@ class Model
     {
         $sql = "SELECT 
                     ia.id,
-                    ia.name AS user_name,
+                                       
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 2)),
+                        ' ',
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 2))
+                    ) AS user_name,
                     ia.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
@@ -1103,20 +1097,20 @@ class Model
     }
     
         // Acknowledge pending items
-    public function acknowledgeAssignment($assignment_id, $user_name)
-        {
-            $sql = "UPDATE inventory_assignment
-                    SET acknowledgment_status = 'acknowledged', updated_at = NOW()
-                    WHERE id = :assignment_id AND TRIM(name) = :user_name";
+    public function acknowledgeAssignment($assignment_id, $user_email)
+    {
+        $sql = "UPDATE inventory_assignment
+                SET acknowledgment_status = 'acknowledged', updated_at = NOW()
+                WHERE id = :assignment_id AND email = :user_email";
 
-            $query = $this->db->prepare($sql);
-            $query->execute([
-                ':assignment_id' => $assignment_id,
-                ':user_name' => $user_name
-            ]);
+        $query = $this->db->prepare($sql);
+        $query->execute([
+            ':assignment_id' => $assignment_id,
+            ':user_email' => $user_email
+        ]);
 
-            return $query->rowCount(); // Number of rows updated
-        }
+        return $query->rowCount(); 
+    }
 
     //bulk acknowledging of items
     public function acknowledgeAllAssignmentsByUser($user_email)
@@ -1185,7 +1179,14 @@ class Model
                 $sql = "SELECT ir.id, 
                                 i.description, 
                                 i.serial_number, 
-                                SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
+                                i.tag_number,
+                                CONCAT(
+                                    UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 1)),
+                                    LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 2)),
+                                    ' ',
+                                    UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 1)),
+                                    LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 2))
+                                ) AS returned_by_name, 
                                 ir.return_date, 
                                 ir.status, 
                                 ir.item_state, 
@@ -1193,7 +1194,13 @@ class Model
                                 ir.approved_date,
                                 ir.repair_status, 
                                 ir.disapproval_comment, 
-                                SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name,
+                                CONCAT(
+                                    UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', 1), 1)),
+                                    LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', 1), 2)),
+                                    ' ',
+                                    UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', -1), 1)),
+                                    LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', -1), 2))
+                                ) AS receiver_name,
                                 ir.created_at, 
                                 ir.updated_at
                         FROM inventory_returned ir
@@ -1255,9 +1262,17 @@ class Model
 
     public function getReceivers()
     {
-        $sql = "SELECT id, SUBSTRING_INDEX(email, '@', 1) AS name 
-                FROM staff_login 
-                WHERE role = 'admin'"; 
+        $sql = "SELECT 
+                    id, 
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', 1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', 1), 2)),
+                        ' ',
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', -1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(email, '@', 1), '.', -1), 2))
+                    ) AS name
+                FROM staff_login
+                WHERE role = 'admin';"; 
         
         $query = $this->db->prepare($sql);
         $query->execute();
@@ -1304,28 +1319,36 @@ class Model
     public function getPendingApprovalsByUser($receiver_id)
     {
         $sql = "SELECT ir.*, inv.description, inv.serial_number, 
-                   sl.email AS receiver_email,
-                   SUBSTRING_INDEX(sl.email, '@', 1) AS name
-             FROM inventory_returned ir
-             JOIN inventory_assignment ia ON ir.assignment_id = ia.id
-             JOIN inventory inv ON ia.item = inv.id
-             JOIN staff_login sl ON ir.receiver_id = sl.id
-             WHERE ir.receiver_id = :receiver_id
-             AND ir.status = 'pending'
-             ORDER BY ir.return_date DESC";
-    
+                    sl.email AS receiver_email,
+                    SUBSTRING_INDEX(sl.email, '@', 1) AS name
+                FROM inventory_returned ir
+                JOIN inventory_assignment ia ON ir.assignment_id = ia.id
+                JOIN inventory inv ON ia.item = inv.id
+                JOIN staff_login sl ON ir.receiver_id = sl.id
+                WHERE ir.receiver_id = :receiver_id
+                AND ir.status = 'pending'
+                ORDER BY ir.return_date DESC";
+
         $query = $this->db->prepare($sql);
-        $query->bindParam(':receiver_id', $receiver_id, PDO::PARAM_INT);
-        $query->execute();
-        $results = $query->fetchAll(PDO::FETCH_ASSOC);
-    
-        if (empty($results)) {
-            
+
+        if (!$query->execute([':receiver_id' => (int)$receiver_id])) {
+            $errorInfo = $query->errorInfo();
+            error_log("SQL Error: " . implode(", ", $errorInfo));
+            return [];
         }
-    
+
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($results)) {
+            error_log("No pending approvals found for receiver_id: $receiver_id");
+        } else {
+            error_log("Found " . count($results) . " pending approvals for receiver_id: $receiver_id");
+        }
+
         return $results;
     }
-     
+
+
     // Approve the returned item
     public function approveReturn($return_id, $item_state, $approved_by, $disapproval_comment = null) {
         try {
@@ -1493,19 +1516,31 @@ class Model
                     i.tag_number, 
                     c.category,
                     ir.disapproval_comment,
-                    ir.return_date AS disapproved_date
+                    ir.return_date AS disapproved_date,
+                    ir.returned_by,
+                    sl.email AS receiver_email
                 FROM inventory_returned ir
                 JOIN inventory_assignment ia ON ir.assignment_id = ia.id
                 JOIN inventory i ON ia.item = i.id
                 JOIN categories c ON i.category_id = c.id
+                LEFT JOIN staff_login sl ON sl.id = ir.receiver_id
                 WHERE ir.item_state = 'disapproved'
                 ORDER BY ir.return_date DESC";
         
         $query = $this->db->prepare($sql);
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
-    }
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
+        // Format names
+        foreach ($results as &$row) {
+            $row['returned_by'] = ucwords(str_replace('.', ' ', strtok($row['returned_by'], '@')));
+            $row['receiver_name'] = $row['receiver_email'] 
+                ? ucwords(str_replace('.', ' ', strtok($row['receiver_email'], '@')))
+                : 'N/A';
+        }
+
+        return $results;
+    }
     //approving ststus of damaged items
     public function updateRepairStatus($item_id, $repair_status)
     {
@@ -1561,15 +1596,11 @@ class Model
         return true;
     }
     
-    
     public function getAssignedItems()
     {
         $sql = "SELECT 
                     ia.id,
-                    CONCAT(
-                        UPPER(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
-                        LOWER(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))
-                    ) AS user_name,
+                    REPLACE(SUBSTRING_INDEX(ia.email, '@', 1), '.', ' ') AS user_name_raw,
                     ia.email AS assigned_user_email,
                     d.department_name AS department,
                     p.position_name AS position,
@@ -1590,67 +1621,26 @@ class Model
                 LEFT JOIN positions p ON sl.position = p.id
                 WHERE ia.acknowledgment_status = 'acknowledged'
                 AND NOT EXISTS (
-                    -- Exclude items that are returned as approved (functional, lost, damaged)
                     SELECT 1 FROM inventory_returned ir 
                     WHERE ir.assignment_id = ia.id 
                     AND (
-                        ir.item_state = 'functional' AND ir.status = 'approved'  -- Exclude approved functional items
-                        OR ir.item_state = 'lost'  -- Exclude lost items
-                        OR ir.item_state = 'damaged'  -- Exclude all damaged items (repairable, unrepairable, or null)
+                        ir.item_state = 'functional' AND ir.status = 'approved'
+                        OR ir.item_state = 'lost'
+                        OR ir.item_state = 'damaged'
                     )
                 )";
-        
+
         $query = $this->db->prepare($sql);
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
-        return $result['in_use_count'];
-    }
-    
-    //search in inuse page
-    public function getAssignedItemsSearch($search)
-    {
-        try {
-            $sql = "SELECT 
-                        ia.id,
-                        ia.name AS user_name,
-                        ia.email AS assigned_user_email, 
-                        sl.department,
-                        sl.position,
-                        ia.location,
-                        c.category AS category,
-                        i.description,
-                        i.serial_number,  
-                        i.tag_number, 
-                        ia.date_assigned,
-                        ia.managed_by,
-                        ia.created_at,
-                        ia.updated_at
-                    FROM inventory_assignment ia
-                    INNER JOIN inventory i ON ia.item = i.id 
-                    LEFT JOIN categories c ON i.category_id = c.id  
-                    LEFT JOIN staff_login sl ON ia.email = sl.email
-                    WHERE 
-                        ia.id IS NOT NULL  
-                        AND NOT EXISTS (
-                            SELECT 1 FROM inventory_returned ir 
-                            WHERE ir.assignment_id = ia.id 
-                            AND (
-                                ir.item_state IN ('functional', 'lost', 'damaged') 
-                                AND ir.status = 'approved'
-                            )
-                        )
-                        AND (
-                            LOWER(i.serial_number) LIKE :search 
-                            OR LOWER(i.tag_number) LIKE :search
-                        )";
-    
-            $query = $this->db->prepare($sql);
-            $query->execute(['search' => "%$search%"]); 
-            
-            return $query->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
+
+        // Format name
+        foreach ($results as &$row) {
+            $row['user_name'] = ucwords($row['user_name_raw']);
+            unset($row['user_name_raw']);
         }
+
+        return $results;
     }
       
     //disposed items ie items that cant be repaired and lost
@@ -1678,10 +1668,17 @@ class Model
                 JOIN categories c ON i.category_id = c.id
                 WHERE ir.item_state = 'lost' OR ir.repair_status = 'Unrepairable'
                 ORDER BY ir.approved_date DESC";
-        
+
         $query = $this->db->prepare($sql);
         $query->execute();
-        return $query->fetchAll(PDO::FETCH_ASSOC);
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
+
+        // Format returned_by to 'Rita Kogi' from 'rita.kogi@example.com'
+        foreach ($results as &$row) {
+            $row['returned_by'] = ucwords(str_replace('.', ' ', strtok($row['returned_by'], '@')));
+        }
+
+        return $results;
     }
     //search disposed items
     public function getDisposedItemsSearch($search)
@@ -1965,8 +1962,13 @@ class Model
         // Fetch assignments for staff within the department hierarchy
         $sql = "SELECT 
                     ia.id,
-                    CONCAT(UCASE(LEFT(SUBSTRING_INDEX(sl.email, '@', 1), 1)), 
-                           LCASE(SUBSTRING(SUBSTRING_INDEX(sl.email, '@', 1), 2))) AS user_name, 
+                    CONCAT(
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 2)),
+                        ' ',
+                        UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 1)),
+                        LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 2))
+                    ) AS user_name,
                     sl.email,
                     d.department_name AS department,  
                     p.position_name AS position,    
@@ -2013,7 +2015,7 @@ class Model
     }
     
     //hierachy access of returned items
-    public function getReturnedItemsByHierarchy($loggedInEmail, $search = '')
+    public function getReturnedItemsByHierarchy($loggedInEmail)
     {
         try {
 
@@ -2021,19 +2023,20 @@ class Model
                     FROM staff_login sl
                     LEFT JOIN positions p ON sl.position = p.id
                     WHERE sl.email = :email";
-    
+
             $query = $this->db->prepare($sql);
             $query->bindParam(':email', $loggedInEmail, PDO::PARAM_STR);
             $query->execute();
             $user = $query->fetch(PDO::FETCH_OBJ);
-    
+
             if (!$user) {
                 return []; 
             }
-    
+
             $userLevel = (int) $user->hierarchy_level;
             $userDepartment = (int) $user->department;
-    
+
+
             $subDepartments = $this->getSubDepartments($userDepartment);
             $subDepartments[] = $userDepartment;
 
@@ -2045,47 +2048,49 @@ class Model
                 default: return []; 
             }
 
-            $placeholders = implode(',', array_fill(0, count($subDepartments), '?'));
-            $sql = "SELECT ir.id, i.description, i.serial_number, 
-                            SUBSTRING_INDEX(sl.email, '@', 1) AS returned_by_name,  
-                            ir.return_date, ir.status, 
-                            SUBSTRING_INDEX(sl_receiver.email, '@', 1) AS receiver_name
+            $levelPlaceholders = implode(',', array_fill(0, count($allowedLevels), '?'));
+            $departmentPlaceholders = implode(',', array_fill(0, count($subDepartments), '?'));
+
+            $sql = "SELECT 
+                        ir.id, 
+                        i.description, 
+                        i.serial_number, 
+                        CONCAT(
+                            UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 1)),
+                            LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', 1), 2)),
+                            ' ',
+                            UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 1)),
+                            LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl.email, '@', 1), '.', -1), 2))
+                        ) AS returned_by_name,
+                        ir.return_date, 
+                        ir.status, 
+                        CONCAT(
+                            UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', 1), 1)),
+                            LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', 1), 2)),
+                            ' ',
+                            UPPER(LEFT(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', -1), 1)),
+                            LOWER(SUBSTRING(SUBSTRING_INDEX(SUBSTRING_INDEX(sl_receiver.email, '@', 1), '.', -1), 2))
+                        ) AS receiver_name
                     FROM inventory_returned ir
                     INNER JOIN inventory_assignment ia ON ir.assignment_id = ia.id  
                     INNER JOIN inventory i ON ia.item = i.id  
                     INNER JOIN staff_login sl ON ir.returned_by = sl.email
                     INNER JOIN staff_login sl_receiver ON ir.receiver_id = sl_receiver.id  
                     INNER JOIN positions p ON sl.position = p.id
-                    WHERE p.hierarchy_level IN (" . implode(',', $allowedLevels) . ") 
-                    AND sl.department IN ($placeholders)
-                    AND ir.returned_by != ?"; 
-    
+                    WHERE p.hierarchy_level IN ($levelPlaceholders)
+                    AND sl.department IN ($departmentPlaceholders)
+                    AND ir.returned_by != ?";
 
-            if (!empty($search)) {
-                $sql .= " AND (
-                            i.description LIKE ? 
-                            OR i.serial_number LIKE ? 
-                            OR ir.status LIKE ?
-                            OR SUBSTRING_INDEX(sl.email, '@', 1) LIKE ?
-                        )";
-            }
-    
+            $params = array_merge($allowedLevels, $subDepartments, [$loggedInEmail]);
+
             $query = $this->db->prepare($sql);
-    
-            $params = array_merge($subDepartments, [$loggedInEmail]);
-    
-            if (!empty($search)) {
-                $searchTerm = "%$search%";
-                $params = array_merge($params, [$searchTerm, $searchTerm, $searchTerm, $searchTerm]);
-            }
-    
             $query->execute($params);
             return $query->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             die("<br><strong>SQL Exception:</strong> " . $e->getMessage());
         }
     }
-    
+ 
     // downloading managers reports
     public function getAssignmentsForDownload($loggedInEmail)
     {

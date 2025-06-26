@@ -115,6 +115,7 @@
                     <tr>
                         <th>Item Name</th>
                         <th>Serial Number</th>
+                        <th>Tag Number</th>
                         <th>Received By</th>
                         <th>Return Date</th>
                         <th>Status</th>
@@ -129,6 +130,7 @@
                         <tr>
                             <td><?= htmlspecialchars($return['description']); ?></td>
                             <td><?= htmlspecialchars($return['serial_number']); ?></td>
+                            <td><?= htmlspecialchars(isset($return['tag_number']) ? $return['tag_number'] : '') ?></td>
                             <td><?= htmlspecialchars($return['receiver_name']); ?></td>
                             <td><?= htmlspecialchars($return['return_date']); ?></td>
                             <td>

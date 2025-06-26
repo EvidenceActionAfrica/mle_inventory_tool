@@ -38,8 +38,6 @@
         <table id="datatablesSimple">
             <thead>
                 <tr>
-                    <th>User Name</th>
-                    <th>Email</th>
                     <th>Description</th>
                     <th>Serial Number</th>
                     <th>Tag Number</th>
@@ -52,8 +50,6 @@
                 <?php if (!empty($pendingAssignments)): ?>
                     <?php foreach ($pendingAssignments as $assignment): ?>
                         <tr>
-                            <td><?= htmlspecialchars($assignment['user_name']); ?></td>
-                            <td><?= htmlspecialchars($assignment['email']); ?></td>
                             <td><?= htmlspecialchars($assignment['description']); ?></td>
                             <td><?= htmlspecialchars($assignment['serial_number']); ?></td>
                             <td><?= htmlspecialchars(isset($assignment['tag_number']) ? $assignment['tag_number'] : '') ?></td>

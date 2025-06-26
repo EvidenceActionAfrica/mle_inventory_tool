@@ -126,7 +126,7 @@ class inventoryreturn extends Controller
         }
     
         if (!isset($_GET['id']) || empty($_GET['id'])) {
-            header("Location: " . URL . "inventoryReturn?error=Invalid request!");
+            header("Location: " . URL . "inventoryreturn/myreturns?error=Invalid request!");
             exit();
         }
         if ($this->model === null) {
@@ -137,9 +137,9 @@ class inventoryreturn extends Controller
         $deleted = $this->model->deleteReturn($id);
     
         if ($deleted) {
-            header("Location: " . URL . "inventoryReturn?success=Item deleted successfully!");
+            header("Location: " . URL . "inventoryreturn/myreturns?success=Item deleted successfully!");
         } else {
-            header("Location: " . URL . "inventoryReturn?error=Cannot delete approved returned items!");
+            header("Location: " . URL . "inventoryreturn/myreturns?error=Cannot delete approved returned items!");
         }
         exit();
     }
@@ -148,37 +148,46 @@ class inventoryreturn extends Controller
     public function approve()
     {
         session_start();
-    
+
         if (!isset($_SESSION['user_email'])) {
             header("Location: " . URL . "login");
             exit();
         }
-    
+
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
-    
-        $user_email = $_SESSION['user_email'] ?? '';  
-        $user_name = explode('@', $user_email)[0]; 
+
+        $user_email = $_SESSION['user_email'];
+        $user_name_raw = explode('@', $user_email)[0]; // e.g. "rita.kogi"
+
+        // Convert to same format as getReceivers() formatting:
+        $parts = explode('.', $user_name_raw);
+        $first = isset($parts[0]) ? ucfirst(strtolower($parts[0])) : '';
+        $last = isset($parts[1]) ? ucfirst(strtolower($parts[1])) : '';
+        $formatted_name = trim("$first $last");
+
+        error_log("Formatted name from session: $formatted_name");
+
         $receivers = $this->model->getReceivers();
-    
+
         $receiver_id = null;
         foreach ($receivers as $receiver) {
-            if (strtolower($receiver['name']) === strtolower($user_name)) { 
+            if (isset($receiver['name']) && strtolower($receiver['name']) === strtolower($formatted_name)) {
                 $receiver_id = $receiver['id'];
                 break;
             }
         }
-    
+
         $pendingApprovals = $this->model->getPendingApprovalsByUser($receiver_id);
 
-        // Load the view
+        // Load views
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/pendingapprovals.php';
     }
-    
+
     //approve returned item
     public function approveReturn() {
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -529,9 +538,9 @@ class inventoryreturn extends Controller
         }
 
         $loggedInEmail = $_SESSION['user_email'];
-        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-        $returnedItems = $this->model->getReturnedItemsByHierarchy($loggedInEmail, $search);
+        // Fetch returned items based on hierarchy 
+        $returnedItems = $this->model->getReturnedItemsByHierarchy($loggedInEmail);
 
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
@@ -549,7 +558,7 @@ class inventoryreturn extends Controller
     
         if ($this->model === null) {
             $_SESSION['error_message'] = "Model not loaded properly!";
-            header("Location: " . URL . "InventoryReturn/staffreturneditems"); 
+            header("Location: " . URL . "inventoryreturn/staffreturneditems"); 
             exit();
         }
     
@@ -558,7 +567,7 @@ class inventoryreturn extends Controller
     
         if (empty($items)) {
             $_SESSION['error_message'] = "No returned items available for download.";
-            header("Location: " . URL . "InventoryReturn/staffreturneditems"); 
+            header("Location: " . URL . "inventoryreturn/staffreturneditems"); 
             exit();
         }
     

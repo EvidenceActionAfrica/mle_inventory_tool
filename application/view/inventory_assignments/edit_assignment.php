@@ -24,10 +24,6 @@
         width: 100%;
     }
 
-    .remove-item-btn {
-        display: inline-block;
-    }
-
     @media (max-width: 768px) {
         .card-centered {
             margin: 20px 10px;
@@ -63,35 +59,31 @@
     <!-- Assignment Edit Form -->
     <div class="card mb-4 card-centered">
         <div class="card-header">
-            <i class="fas fa-edit me-1"></i> 
+            <i class="fas fa-edit me-1"></i> Edit Assignment
         </div>
         <div class="card-body">
             <form action="<?= URL ?>inventoryassignment/edit/<?= htmlspecialchars($assignment['id']); ?>" method="POST">
                 <input type="hidden" name="assignment_id" value="<?= htmlspecialchars($assignment['id']); ?>">
 
-                <!-- Existing Assigned Items -->
+                <!-- Assigned Item(s) - Editable Select -->
                 <div id="item-container">
                     <?php foreach ($assignment['items'] as $item): ?>
                         <div class="row g-3 align-items-end item-group mb-3">
-                            <div class="col-md-10">
-                                <label class="form-label">Select Item</label>
+                            <div class="col-md-12">
+                                <label class="form-label">Assigned Item</label>
                                 <select name="inventory_id[]" class="form-select" required>
                                     <option value="">Choose an item</option>
                                     <?php foreach ($unassignedItems as $availableItem): ?>
-                                        <option value="<?= $availableItem['id']; ?>" <?= $item['id'] == $availableItem['id'] ? 'selected' : ''; ?>>
+                                        <option value="<?= htmlspecialchars($availableItem['id']); ?>" 
+                                            <?= ($availableItem['id'] == $item['id']) ? 'selected' : ''; ?>>
                                             <?= htmlspecialchars($availableItem['description']); ?> (<?= htmlspecialchars($availableItem['serial_number']); ?>)
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-danger remove-item-btn w-100" onclick="removeItem(this)">Remove</button>
-                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
-
-                <button type="button" id="add-item-btn" class="btn btn-outline-primary mb-3 w-100">Add Another Item</button>
 
                 <!-- User Selection -->
                 <div class="mb-3">
@@ -99,13 +91,20 @@
                     <select name="user_id" class="form-select" required>
                         <option value="">Select User</option>
                         <?php foreach ($users as $user): ?>
-                            <option value="<?= $user['id'] ?>" <?= $user['id'] == $assignment['user_id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars(strtok($user['email'], '@')) ?>
+                            <?php
+                                $emailPrefix = strtok($user['email'], '@');
+                                $parts = preg_split('/[._]/', $emailPrefix);
+                                $formattedName = implode(' ', array_map(function($part) {
+                                    return ucfirst(strtolower($part));
+                                }, $parts));
+                                $selected = ($user['id'] == $assignment['user_id']) ? 'selected' : '';
+                            ?>
+                            <option value="<?= htmlspecialchars($user['id']); ?>" <?= $selected ?>>
+                                <?= htmlspecialchars($formattedName) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-
 
                 <!-- Date Assigned -->
                 <div class="mb-3">
@@ -119,59 +118,25 @@
                     <select name="managed_by" class="form-select" required>
                         <option value="">Select Manager</option>
                         <?php foreach ($users as $user): ?>
-                            <option value="<?= htmlspecialchars($user['email']); ?>" <?= $user['email'] == $assignment['managed_by'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars(strtok($user['email'], '@')) ?>
+                            <?php
+                                $emailPrefix = strtok($user['email'], '@');
+                                $parts = preg_split('/[._]/', $emailPrefix);
+                                $formattedName = implode(' ', array_map(function($part) {
+                                    return ucfirst(strtolower($part));
+                                }, $parts));
+                                $selected = ($user['email'] == $assignment['managed_by']) ? 'selected' : '';
+                            ?>
+                            <option value="<?= htmlspecialchars($user['email']); ?>" <?= $selected ?>>
+                                <?= htmlspecialchars($formattedName) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
-                <!-- Submit -->
+                <!-- Submit Button -->
                 <button type="submit" name="update_assignment" class="btn btn-success">Update Assignment</button>
             </form>
         </div>
     </div>
 </div>
 </main>
-
-<!-- Dynamic Item Script -->
-<script>
-    document.getElementById('add-item-btn').addEventListener('click', function () {
-        let container = document.getElementById('item-container');
-        let newItemGroup = document.createElement('div');
-        newItemGroup.classList.add('row', 'g-3', 'align-items-end', 'item-group', 'mb-3');
-
-        newItemGroup.innerHTML = `
-            <div class="col-md-10">
-                <label class="form-label">Select Item</label>
-                <select name="inventory_id[]" class="form-select" required>
-                    <option value="">Choose an item</option>
-                    <?php foreach ($unassignedItems as $item): ?>
-                        <option value="<?= $item['id']; ?>">
-                            <?= htmlspecialchars($item['description']); ?> (<?= htmlspecialchars($item['serial_number']); ?>)
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-danger remove-item-btn w-100" onclick="removeItem(this)">Remove</button>
-            </div>
-        `;
-
-        container.appendChild(newItemGroup);
-        updateRemoveButtons();
-    });
-
-    function removeItem(button) {
-        button.closest('.item-group').remove();
-        updateRemoveButtons();
-    }
-
-    function updateRemoveButtons() {
-        document.querySelectorAll('.remove-item-btn').forEach(button => {
-            button.style.display = document.querySelectorAll('.item-group').length > 1 ? 'inline-block' : 'none';
-        });
-    }
-
-    updateRemoveButtons();
-</script>

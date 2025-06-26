@@ -244,7 +244,7 @@ class inventoryassignment extends Controller
         }
         if ($this->model === null) {
             $_SESSION['error_message'] = "Model not loaded properly!";
-            header("Location: " . URL . "InventoryAssignment/staffassignments"); // Redirect to staff assignments page
+            header("Location: " . URL . "inventoryassignment/staffassignments"); // Redirect to staff assignments page
             exit();
         }
     
@@ -253,7 +253,7 @@ class inventoryassignment extends Controller
     
         if (empty($assignments)) {
             $_SESSION['error_message'] = "No data available for download.";
-            header("Location: " . URL . "InventoryAssignment/staffassignments"); // Redirect to staff assignments page
+            header("Location: " . URL . "inventoryassignment/staffassignments"); // Redirect to staff assignments page
             exit();
         }
     
