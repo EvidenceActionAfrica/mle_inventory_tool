@@ -54,14 +54,14 @@
                                             <option value="disapproved">Disapproved</option>
                                         </select>
 
-                                        <!-- This will show when "Disapproved" is selected -->
-                                        <textarea name="disapproval_comment" class="form-control form-control-sm mt-2 disapproval-comment" placeholder="Enter disapproval reason..." style="display:none;" required></textarea>
+                                        <textarea name="disapproval_comment"
+                                                  class="form-control form-control-sm mt-2 disapproval-comment"
+                                                  placeholder="Enter disapproval reason..."
+                                                  style="display:none;"></textarea>
 
                                         <button type="submit" class="btn btn-success btn-sm">Submit</button>
                                     </form>
                                 </td>
-
-
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -86,19 +86,40 @@
         }
     });
 </script>
+
+<!-- Validation & Toggle Script -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const selectors = document.querySelectorAll('.item-state-selector');
-    
-    selectors.forEach(function(select) {
-        select.addEventListener('change', function() {
-            const commentBox = this.parentElement.querySelector('.disapproval-comment');
+
+    selectors.forEach(function (select) {
+        select.addEventListener('change', function () {
+            const form = this.closest('form');
+            const textarea = form.querySelector('.disapproval-comment');
+
             if (this.value === 'disapproved') {
-                commentBox.style.display = 'block';
-                commentBox.required = true;
+                textarea.style.display = 'block';
             } else {
-                commentBox.style.display = 'none';
-                commentBox.required = false;
+                textarea.style.display = 'none';
+                textarea.value = '';
+            }
+        });
+    });
+
+    // Validate disapproval comment on submit
+    const forms = document.querySelectorAll('form');
+
+    forms.forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            const select = form.querySelector('.item-state-selector');
+            const textarea = form.querySelector('.disapproval-comment');
+
+            if (select && select.value === 'disapproved') {
+                if (!textarea.value.trim()) {
+                    e.preventDefault(); // prevent form submit
+                    alert('Please provide a reason for disapproval.');
+                    textarea.focus();
+                }
             }
         });
     });

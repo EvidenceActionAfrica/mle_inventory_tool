@@ -289,6 +289,23 @@ class Model
         $query->execute();
         return $query->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function searchItems(string $search)
+    {
+        $sql = "SELECT i.id, c.category AS category, i.description, i.serial_number, 
+                    i.tag_number, i.acquisition_date, i.acquisition_cost, i.warranty_date 
+                FROM inventory i
+                JOIN categories c ON i.category_id = c.id
+                WHERE i.description LIKE :search 
+                OR i.tag_number LIKE :search
+                OR i.serial_number LIKE :search
+                ORDER BY i.created_at DESC";
+
+        $query = $this->db->prepare($sql);
+        $searchTerm = '%' . $search . '%';
+        $query->bindParam(':search', $searchTerm, PDO::PARAM_STR);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
     //utility function to get location from staff_login table
     public function getCustodianLocation($custodian_id) {
         $sql = "SELECT dutystation FROM staff_login WHERE id = :id AND role = 'admin'";
@@ -501,17 +518,8 @@ class Model
     }
 
     // Update inventory item
-    public function updateItem(
-        $id,
-        $category_id,
-        $description,
-        $serial_number,
-        $tag_number,
-        $acquisition_date,
-        $acquisition_cost,
-        $warranty_date,
-        $custodian
-        ) {
+    public function updateItem($id,$category_id,$description,$serial_number,$tag_number,$acquisition_date,$acquisition_cost,$warranty_date,$custodian) 
+    {
         $location = $this->getCustodianLocation($custodian);
         if (!$location) {
             $location = 'Unknown';
@@ -535,10 +543,24 @@ class Model
         $query->bindValue(':category_id', $category_id, PDO::PARAM_INT);
         $query->bindValue(':description', $description, PDO::PARAM_STR);
         $query->bindValue(':serial_number', $serial_number, PDO::PARAM_STR);
-        $query->bindValue(':tag_number', $tag_number ?: null, PDO::PARAM_NULL); // simplified null bind
+
+        // ✅ Fix tag_number binding
+        if (!empty($tag_number)) {
+            $query->bindValue(':tag_number', $tag_number, PDO::PARAM_STR);
+        } else {
+            $query->bindValue(':tag_number', null, PDO::PARAM_NULL);
+        }
+
         $query->bindValue(':acquisition_date', $acquisition_date, PDO::PARAM_STR);
         $query->bindValue(':acquisition_cost', $acquisition_cost);
-        $query->bindValue(':warranty_date', $warranty_date ?: null, PDO::PARAM_NULL); // simplified null bind
+
+        // ✅ Fix warranty_date binding
+        if (!empty($warranty_date)) {
+            $query->bindValue(':warranty_date', $warranty_date, PDO::PARAM_STR);
+        } else {
+            $query->bindValue(':warranty_date', null, PDO::PARAM_NULL);
+        }
+
         $query->bindValue(':location', $location, PDO::PARAM_STR);
         $query->bindValue(':custodian', $custodian, PDO::PARAM_INT);
 
@@ -696,6 +718,58 @@ class Model
         return $query->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getUserProfileByEmail($email)
+    {
+        $sql = "SELECT 
+                    sl.email,
+                    d.department_name AS department,
+                    p.position_name AS position
+                FROM staff_login sl
+                LEFT JOIN departments d ON sl.department = d.id
+                LEFT JOIN positions p ON sl.position = p.id
+                WHERE sl.email = :email
+                LIMIT 1";
+
+        $query = $this->db->prepare($sql);
+        $query->execute([':email' => $email]);
+        return $query->fetch(PDO::FETCH_ASSOC);
+    }
+
+
+    public function getItemSummariesByIds(array $assignment_ids)
+    {
+        if (empty($assignment_ids)) {
+            return [];
+        }
+
+        // Prepare placeholders for the IN clause
+        $placeholders = implode(',', array_fill(0, count($assignment_ids), '?'));
+
+        // SQL: join inventory_assignment with inventory to get description
+        $sql = "SELECT ia.serial_number, ia.tag_number, inv.description
+                FROM inventory_assignment ia
+                LEFT JOIN inventory inv ON ia.item = inv.id
+                WHERE ia.id IN ($placeholders)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($assignment_ids);
+
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        error_log("Fetched items from DB in getItemSummariesByIds(): " . print_r($items, true));
+
+        $summaries = [];
+        foreach ($items as $item) {
+            $serial = isset($item['serial_number']) && $item['serial_number'] !== '' ? $item['serial_number'] : 'N/A';
+            $tag = isset($item['tag_number']) && $item['tag_number'] !== '' ? $item['tag_number'] : 'N/A';
+            $desc = isset($item['description']) && $item['description'] !== '' ? $item['description'] : 'N/A';
+
+            $summaries[] = "Description: {$desc}, Serial: {$serial}, Tag: {$tag}";
+        }
+
+        return $summaries;
+    }
+
+
     // Assign items to users
     public function addAssignment($user_id, $item_ids, $date_assigned, $manager_email)
     {
@@ -811,7 +885,7 @@ class Model
 
         $assignment_id = $assignment['id'] ?? null;
 
-        // 5. Check if item is lost or unrepairable damaged via inventory_returned linked by assignment_id
+        // 5. Check if item is lost or unrepairable damaged
         if ($assignment_id) {
             $returnSql = "SELECT item_state, repair_status 
                         FROM inventory_returned 
@@ -832,7 +906,7 @@ class Model
             }
         }
 
-        // 6. Check if item is already assigned (acknowledgment_status pending or acknowledged)
+        // 6. Check if item is already assigned
         $checkSql = "SELECT COUNT(*) FROM inventory_assignment 
                     WHERE item = :item_id AND acknowledgment_status IN ('pending', 'acknowledged')";
         $checkQuery = $this->db->prepare($checkSql);
@@ -861,7 +935,11 @@ class Model
 
             $success = $query->execute($parameters);
             if ($success) {
-                return ['type' => 'success', 'message' => "Item assigned successfully!"];
+                return [
+                    'type' => 'success',
+                    'message' => "Item assigned successfully!",
+                    'assignment_id' => $this->db->lastInsertId() 
+                ];
             } else {
                 $error = $query->errorInfo();
                 return ['type' => 'error', 'message' => "Assignment failed: " . implode(" | ", $error)];
@@ -870,7 +948,7 @@ class Model
             return ['type' => 'error', 'message' => "DB Error: " . $e->getMessage()];
         }
     }
-    
+ 
     //get manageers
     public function getManagers()
     {
@@ -923,6 +1001,13 @@ class Model
         }
 
         return $assignment;
+    }
+    public function getLatestAssignmentIdByItem($itemId)
+    {
+        $sql = "SELECT id FROM inventory_assignment WHERE item = :item_id ORDER BY created_at DESC LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['item_id' => $itemId]);
+        return $stmt->fetchColumn(); // Returns just the id
     }
 
     // Update assignment only if acknowledgment_status is pending
@@ -1097,80 +1182,64 @@ class Model
     }
     
         // Acknowledge pending items
-    public function acknowledgeAssignment($assignment_id, $user_email)
+    public function acknowledgeAssignment($assignment_id, $user_email, $device_state)
     {
         $sql = "UPDATE inventory_assignment
-                SET acknowledgment_status = 'acknowledged', updated_at = NOW()
+                SET acknowledgment_status = 'acknowledged', 
+                    device_state = :device_state,
+                    updated_at = NOW()
                 WHERE id = :assignment_id AND email = :user_email";
 
         $query = $this->db->prepare($sql);
         $query->execute([
             ':assignment_id' => $assignment_id,
-            ':user_email' => $user_email
+            ':user_email' => $user_email,
+            ':device_state' => $device_state
         ]);
 
-        return $query->rowCount(); 
-    }
-
-    //bulk acknowledging of items
-    public function acknowledgeAllAssignmentsByUser($user_email)
-    {
-        $sql = "UPDATE inventory_assignment
-                SET acknowledgment_status = 'acknowledged',
-                    confirmation_date = NOW(),
-                    updated_at = NOW()
-                WHERE email = :email
-                AND acknowledgment_status = 'pending'
-                AND id NOT IN (
-                    SELECT assignment_id FROM inventory_returned
-                    WHERE status = 'approved'
-                        AND return_date IS NOT NULL
-                )";
-
-        $query = $this->db->prepare($sql);
-        return $query->execute([':email' => $user_email]);
+        return $query->rowCount();
     }
         ///get items assigned to a logged in user
     public function getApprovedAssignmentsByLoggedInUser($user_email)
-        {
-            $sql = "SELECT 
-                        ia.id,
-                        ia.name AS user_name,
-                        ia.email,
-                        d.department_name AS department,  
-                        p.position_name AS position,
-                        i.category_id,
-                        i.description,
-                        ia.serial_number,
-                        ia.tag_number,
-                        ia.date_assigned,
-                        ia.managed_by,
-                        ia.acknowledgment_status,
-                        ia.reconfirm_enabled,  
-                        ia.confirmed,          
-                        ia.confirmation_date,
-                        ia.created_at,
-                        ia.updated_at
-                    FROM inventory_assignment ia
-                    LEFT JOIN inventory i ON ia.item = i.id
-                    LEFT JOIN staff_login sl ON ia.email = sl.email
-                    LEFT JOIN departments d ON sl.department = d.id  
-                    LEFT JOIN positions p ON sl.position = p.id 
-                    WHERE ia.email = :user_email
-                    AND ia.acknowledgment_status = 'acknowledged'
-                    -- Exclude items that have been returned and approved
-                    AND ia.id NOT IN (
-                        SELECT ir.assignment_id
-                        FROM inventory_returned ir
-                        WHERE ir.status = 'approved' 
-                          AND ir.return_date IS NOT NULL
-                    )";
-            
-            $query = $this->db->prepare($sql);
-            $query->execute([':user_email' => $user_email]);
-            return $query->fetchAll(PDO::FETCH_ASSOC);
-        }
-          
+    {
+        $sql = "SELECT 
+                    ia.id,
+                    ia.name AS user_name,
+                    ia.email,
+                    d.department_name AS department,  
+                    p.position_name AS position,
+                    i.category_id,
+                    i.description,
+                    ia.serial_number,
+                    ia.tag_number,
+                    ia.date_assigned,
+                    ia.managed_by,
+                    ia.acknowledgment_status,
+                    ia.device_state,    
+                    ia.reconfirm_enabled,  
+                    ia.confirmed,          
+                    ia.confirmation_date,
+                    ia.created_at,
+                    ia.updated_at
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN staff_login sl ON ia.email = sl.email
+                LEFT JOIN departments d ON sl.department = d.id  
+                LEFT JOIN positions p ON sl.position = p.id 
+                WHERE ia.email = :user_email
+                AND ia.acknowledgment_status = 'acknowledged'
+                -- Exclude items that have been returned and approved
+                AND ia.id NOT IN (
+                    SELECT ir.assignment_id
+                    FROM inventory_returned ir
+                    WHERE ir.status = 'approved' 
+                    AND ir.return_date IS NOT NULL
+                )";
+        
+        $query = $this->db->prepare($sql);
+        $query->execute([':user_email' => $user_email]);
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
             //item returning process...
         //model to show returned item
     public function getReturnedItems($returned_by)
@@ -1611,6 +1680,7 @@ class Model
                     ia.date_assigned,
                     ia.managed_by,
                     ia.acknowledgment_status,
+                    ia.device_state, -- ✅ Added here
                     ia.created_at,
                     ia.updated_at
                 FROM inventory_assignment ia
@@ -1634,7 +1704,6 @@ class Model
         $query->execute();
         $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-        // Format name
         foreach ($results as &$row) {
             $row['user_name'] = ucwords($row['user_name_raw']);
             unset($row['user_name_raw']);
@@ -1642,7 +1711,7 @@ class Model
 
         return $results;
     }
-      
+
     //disposed items ie items that cant be repaired and lost
     public function getDisposedItems()
     {
@@ -2379,9 +2448,9 @@ class Model
         ]);
 
         if ($success) {
-            return $this->db->lastInsertId(); // ✅ Ensure session ID is returned
+            return $this->db->lastInsertId();
         } else {
-            return false; // or throw an exception
+            return false; 
         }
     }
     
@@ -2439,8 +2508,8 @@ class Model
     
     //getting all reports
     public function getReconfirmationReport($year = null, $month = null)
-        {
-            $sql = "SELECT 
+    {
+        $sql = "SELECT 
                     CONCAT(UCASE(LEFT(SUBSTRING_INDEX(ia.email, '@', 1), 1)), 
                     LCASE(SUBSTRING(SUBSTRING_INDEX(ia.email, '@', 1), 2))) AS name, 
                     ia.email,
@@ -2451,40 +2520,79 @@ class Model
                     i.description AS item,
                     ia.managed_by,
                     ia.date_assigned,
-                    ia.confirmation_date,
                     rs.year,
                     rs.month,
-                    cl.confirmation_date AS log_confirmation_date,
-                    cl.confirmed_by,
-                    cl.status AS confirmation_status
+                    COALESCE(cl.confirmation_date, '') AS log_confirmation_date,
+                    COALESCE(cl.confirmed_by, '') AS confirmed_by,
+                    COALESCE(cl.status, 'Pending') AS confirmation_status
                 FROM inventory_assignment ia
                 JOIN reconfirmation_sessions rs ON ia.reconfirmation_session_id = rs.id
                 LEFT JOIN inventory i ON ia.item = i.id
                 LEFT JOIN confirmation_log cl ON ia.id = cl.inventory_assignment_id
                 LEFT JOIN staff_login sl ON ia.email = sl.email  
                 LEFT JOIN positions p ON sl.position = p.id 
-                LEFT JOIN departments d ON sl.department = d.id  
-                WHERE ia.confirmed = 1";
-        
-            $params = [];
-        
-            if ($year !== null) {
-                $sql .= " AND rs.year = :year";
-                $params[':year'] = $year;
-            }
-        
-            if ($month !== null) {
-                $sql .= " AND rs.month = :month";
-                $params[':month'] = $month;
-            }
-        
-            $sql .= " ORDER BY ia.confirmation_date DESC";
-        
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-        
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                LEFT JOIN departments d ON sl.department = d.id
+                WHERE 1 = 1"; // no filter on ia.confirmed
+
+        $params = [];
+
+        if ($year !== null) {
+            $sql .= " AND rs.year = :year";
+            $params[':year'] = $year;
         }
+
+        if ($month !== null) {
+            $sql .= " AND rs.month = :month";
+            $params[':month'] = $month;
+        }
+
+        $sql .= " ORDER BY ia.date_assigned DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAssignmentsNeedingConfirmation()
+    {
+        $sql = "SELECT ia.email,
+                    SUBSTRING_INDEX(ia.email, '@', 1) AS raw_name,
+                    i.description,
+                    ia.tag_number,
+                    ia.serial_number
+                FROM inventory_assignment ia
+                LEFT JOIN inventory i ON ia.item = i.id
+                LEFT JOIN inventory_returned ir ON ia.id = ir.assignment_id
+                WHERE ia.confirmed = 0
+                AND ia.reconfirm_enabled = 1
+                AND ia.acknowledgment_status = 'acknowledged'
+                AND (ir.id IS NULL OR ir.status = 'pending')
+                ORDER BY ia.email";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $grouped = [];
+        foreach ($assignments as $row) {
+            $email = $row['email'];
+            if (!isset($grouped[$email])) {
+                $grouped[$email] = [
+                    'name' => $row['raw_name'],
+                    'assignments' => [],
+                ];
+            }
+            $grouped[$email]['assignments'][] = [
+                'description' => $row['description'],
+                'tag_number' => $row['tag_number'],
+                'serial_number' => $row['serial_number']
+            ];
+        }
+
+        return $grouped;
+    }
+
           
 }
 

@@ -52,3 +52,9 @@ admin@test.com - super admin....password-p@55word
 tech@test.com - IT..............password-mle2025
 quality@test.com - QA/QC........password-mle2025
 staff@test.com - Mle user.......password-mle2025
+
+Installing php mailer library
+composer require phpmailer/phpmailer
+
+installing google sign in library
+composer require google/apiclient guzzlehttp/guzzle

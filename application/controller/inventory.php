@@ -1,4 +1,6 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 class Inventory extends Controller
 {
@@ -147,7 +149,7 @@ class Inventory extends Controller
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // category_id is a hidden input updated via JS, so get it directly
+            // Retrieve form values
             $category_id = intval($_POST['category_id']);
             $description = trim($_POST['description']);
             $serial_number = trim($_POST['serial_number']);
@@ -155,11 +157,10 @@ class Inventory extends Controller
             $acquisition_date = trim($_POST['acquisition_date']);
             $acquisition_cost = trim($_POST['acquisition_cost']);
             $warranty_date = trim($_POST['warranty_date']);
-            if ($warranty_date === '') {
-                $warranty_date = null;
-            }
+            $warranty_date = $warranty_date === '' ? null : $warranty_date;
             $custodian = intval($_POST['custodian_id']);
 
+            // Try to update item
             $success = $this->model->updateItem(
                 $id,
                 $category_id,
@@ -172,15 +173,25 @@ class Inventory extends Controller
                 $custodian
             );
 
+            // Preserve search query string if available
+            $search = isset($_POST['search']) ? $_POST['search'] : '';
             if ($success) {
-                header("Location: " . URL . "inventory/index?success=Item updated successfully!");
+                $redirectUrl = URL . "inventory/index?success=" . urlencode("Item updated successfully!");
+                if (!empty($search)) {
+                    $redirectUrl .= "&search=" . urlencode($search);
+                }
+                header("Location: " . $redirectUrl);
                 exit();
             } else {
-                header("Location: " . URL . "inventory/edit/$id?error=Failed to update item.");
+                $redirectUrl = URL . "inventory/edit/$id?error=" . urlencode("Failed to update item.");
+                if (!empty($search)) {
+                    $redirectUrl .= "&search=" . urlencode($search);
+                }
+                header("Location: " . $redirectUrl);
                 exit();
             }
         } else {
-            // GET request — load categories & custodians for dropdowns
+            // GET request — load form
             $categories = $this->model->getCategories();
 
             $positions = $this->model->get_positions() ?? [];
@@ -191,7 +202,6 @@ class Inventory extends Controller
 
             $custodians_raw = $this->model->get_users() ?? [];
 
-            // Process custodians same as in add() to add camel case name and position_name
             $custodians = [];
             foreach ($custodians_raw as $c) {
                 if ($c->role !== 'admin') {
@@ -200,10 +210,7 @@ class Inventory extends Controller
 
                 $positionName = isset($positionMap[$c->position]) ? $positionMap[$c->position] : 'Unknown Position';
 
-                // Convert email prefix to camel case name
                 $email_prefix = strstr($c->email, '@', true);
-
-                // Split on dot, underscore, hyphen to handle multi-part names
                 $parts = preg_split('/[._\-]+/', $email_prefix);
                 $nameParts = array_map(function($part) {
                     return ucfirst(strtolower($part));
@@ -226,7 +233,6 @@ class Inventory extends Controller
             require APP . 'view/inventory/edit_inventory_item.php';
         }
     }
-
 
     // Delete an item
     public function delete()
@@ -275,12 +281,187 @@ class Inventory extends Controller
 
             $result = $this->model->assignSingleItem($user_id, $item_id, $date_assigned, $manager_email);
 
-            // Redirect with message type and content
-            $messageType = $result['type'] ?? 'error';
-            $message = urlencode($result['message'] ?? 'Unknown error');
+            if (isset($result['type']) && $result['type'] === 'success') {
+                // ✅ Get recipient info
+                $recipientData = $this->model->getUserById($user_id);
+                $recipientEmail = $recipientData['email'];
+                $emailPrefix = explode('@', $recipientEmail)[0];
+                $recipientName = implode(' ', array_map('ucfirst', explode('.', $emailPrefix)));
 
-            header("Location: " . URL . "inventory/index?$messageType=" . $message);
-            exit();
+                // ✅ Get assigner info
+                $assignerEmail = $_SESSION['user_email'] ?? '';
+                $assignerProfile = $this->model->getUserProfileByEmail($assignerEmail);
+                if (!empty($assignerProfile['email'])) {
+                    $assignerEmailPrefix = explode('@', $assignerProfile['email'])[0];
+                    $assignerProfile['name'] = implode(' ', array_map('ucfirst', explode('.', $assignerEmailPrefix)));
+                } else {
+                    $assignerProfile['name'] = 'N/A';
+                }
+
+                // ✅ Get item summary
+                $assignmentId = $this->model->getLatestAssignmentIdByItem($item_id); 
+                $itemList = $this->model->getItemSummariesByIds([$assignmentId]);
+
+                // ✅ Send email to recipient
+                $this->sendAcknowledgmentEmailToUser($recipientEmail, $recipientName, $itemList, $assignerProfile);
+
+                // ✅ Send email to manager
+                $managerName = implode(' ', array_map('ucfirst', explode('.', explode('@', $manager_email)[0])));
+                $this->sendAssignmentNotificationToManager($manager_email, $managerName, $recipientName, $itemList);
+
+                // ✅ Redirect with success
+                header("Location: " . URL . "inventory/index?success=" . urlencode($result['message']));
+                exit();
+            } else {
+                $message = urlencode($result['message'] ?? 'Unknown error');
+                header("Location: " . URL . "inventory/index?error=" . $message);
+                exit();
+            }
+        }
+    }
+    // email to the user to acknowledge items
+    protected function sendAcknowledgmentEmailToUser($recipientEmail, $recipientName, $itemList, $assigner)
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'information.systems@evidenceaction.org';
+            $mail->Password   = 'rtnbqnbajjhcifbr';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom('information.systems@evidenceaction.org', 'MLE Inventory Tool');
+            $mail->addAddress($recipientEmail, $recipientName);
+            $mail->addBCC('information.systems@evidenceaction.org');
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Acknowledgment Required: Issued Item(s) – Action Needed Within 2 Working Days';
+
+            // item list HTML
+            $itemListHtml = "<ul>";
+            foreach ($itemList as $item) {
+                $parts = explode(',', $item);
+                $formattedParts = [];
+
+                foreach ($parts as $part) {
+                    // trim whitespace
+                    $part = trim($part);
+
+                    // Split label and value by first colon
+                    $labelValue = explode(':', $part, 2);
+
+                    if (count($labelValue) == 2) {
+                        $label = htmlspecialchars(trim($labelValue[0]));
+                        $value = htmlspecialchars(trim($labelValue[1]));
+                        $formattedParts[] = "<strong>{$label}:</strong> {$value}";
+                    } else {
+                        // fallback if no colon
+                        $formattedParts[] = htmlspecialchars($part);
+                    }
+                }
+
+                $itemListHtml .= "<li>" . implode(', ', $formattedParts) . "</li>";
+            }
+            $itemListHtml .= "</ul>";
+
+
+            $assignerName = htmlspecialchars($assigner['name'] ?? 'N/A');
+            $assignerPosition = htmlspecialchars($assigner['position'] ?? 'N/A');
+            $assignerDepartment = htmlspecialchars($assigner['department'] ?? 'N/A');
+
+            $mail->Body = "
+                <p>Dear {$recipientName},</p>
+
+                <p>This is to inform you that item(s) have been issued to you through the MLE Inventory System. 
+                You are required to log in and acknowledge receipt of the item(s) within the next <strong>two (2) working days</strong>.</p>
+
+                {$itemListHtml}
+
+                <p><strong>Please note:</strong> Failure to acknowledge may affect future inventory tracking and accountability.</p>
+
+                <p>If you experience any issues accessing the system or identifying the issued item(s), kindly reach out to the <strong>IT Department</strong> for assistance.</p>
+
+                <p>Thank you for your prompt attention.</p>
+
+                <p>Best regards,<br>
+                {$assignerName}<br>
+                {$assignerPosition}<br>
+                {$assignerDepartment}<br>
+                Evidence Action</p>
+            ";
+
+            $mail->AltBody = "You have been assigned items. Please log in to the MLE Inventory Tool and acknowledge receipt within 2 working days.";
+
+            $mail->CharSet = 'UTF-8';
+            $mail->send();
+            error_log("Acknowledgment email sent to: {$recipientEmail}");
+        } catch (Exception $e) {
+            error_log("PHPMailer Error: {$mail->ErrorInfo}");
+        }
+    }
+    // email to the manager after item assignments
+    protected function sendAssignmentNotificationToManager($managerEmail, $managerName, $recipientName, $itemList)
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'information.systems@evidenceaction.org';
+            $mail->Password   = 'rtnbqnbajjhcifbr';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom('information.systems@evidenceaction.org', 'MLE Inventory Tool');
+            $mail->addAddress($managerEmail, $managerName);
+            $mail->addBCC('information.systems@evidenceaction.org');
+
+            $mail->isHTML(true);
+            $mail->Subject = "Notification: {$recipientName} Assigned Inventory Item(s)";
+
+            // Build item list HTML
+            $itemListHtml = "<ul>";
+            foreach ($itemList as $item) {
+                $parts = explode(',', $item);
+                $formattedParts = [];
+
+                foreach ($parts as $part) {
+                    $labelValue = explode(':', $part, 2);
+                    if (count($labelValue) == 2) {
+                        $label = htmlspecialchars(trim($labelValue[0]));
+                        $value = htmlspecialchars(trim($labelValue[1]));
+                        $formattedParts[] = "<strong>{$label}:</strong> {$value}";
+                    } else {
+                        $formattedParts[] = htmlspecialchars($part);
+                    }
+                }
+
+                $itemListHtml .= "<li>" . implode(', ', $formattedParts) . "</li>";
+            }
+            $itemListHtml .= "</ul>";
+
+            $mail->Body = "
+                <p>Dear {$managerName},</p>
+
+                <p>This is to inform you that your supervisee <strong>{$recipientName}</strong> has been assigned the following item(s):</p>
+
+                {$itemListHtml}
+
+                <p>Please reach out to IT if you have any concerns or need clarification.</p>
+
+                <p>Best regards,<br>MLE Inventory Tool</p>
+            ";
+
+            $mail->AltBody = "{$recipientName} has been assigned inventory items.";
+
+            $mail->CharSet = 'UTF-8';
+            $mail->send();
+        } catch (Exception $e) {
+            error_log("Manager Email Error: " . $mail->ErrorInfo);
         }
     }
 

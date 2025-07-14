@@ -1,4 +1,6 @@
 <?php
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 class inventoryassignment extends Controller
 {
@@ -21,61 +23,258 @@ class inventoryassignment extends Controller
         require APP . 'view/inventory_assignments/index.php';
     }
 
-    // Add new assignment
+// Add new assignment
     public function add()
     {
         if ($this->model === null) {
-            echo "Model not loaded properly!";
+            error_log("Model not loaded properly!");
+            http_response_code(500);
+            echo "Internal Server Error";
             exit();
         }
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            session_start();
+
             $user_id = intval($_POST['user_id']);
             $item_ids = $_POST['inventory_id']; 
             $date_assigned = $_POST['date_assigned'];
             $manager_email = $_POST['managed_by'];
 
+            // Call model to perform assignment
             $result = $this->model->addAssignment($user_id, $item_ids, $date_assigned, $manager_email);
 
             if (strpos($result, 'successfully') !== false) {
+                // Prepare recipient info
+                $recipientData = $this->model->getUserById($user_id); // expects ['email' => ...]
+                $recipientEmail = $recipientData['email'];
+
+                // Format recipient name: "rita.kogi" -> "Rita Kogi"
+                $emailPrefix = explode('@', $recipientEmail)[0];
+                $recipientName = implode(' ', array_map('ucfirst', explode('.', $emailPrefix)));
+
+                error_log("Recipient Email: $recipientEmail");
+                error_log("Recipient Name: $recipientName");
+
+                // Get assigner info from session
+                $assignerEmail = $_SESSION['user_email'] ?? '';
+                $assignerProfile = $this->model->getUserProfileByEmail($assignerEmail); 
+                // Expected keys: ['email' => ..., 'position' => ..., 'department' => ...]
+
+                // Derive assigner name from email prefix
+                if (!empty($assignerProfile['email'])) {
+                    $assignerEmailPrefix = explode('@', $assignerProfile['email'])[0];
+                    $assignerProfile['name'] = implode(' ', array_map('ucfirst', explode('.', $assignerEmailPrefix)));
+                } else {
+                    $assignerProfile['name'] = 'N/A';
+                }
+
+                error_log("Assigner Profile: " . print_r($assignerProfile, true));
+
+                // Get item summary list with serial, tag, description
+                $itemList = $this->model->getItemSummariesByIds($item_ids);
+                error_log("Item List from getItemSummariesByIds: " . print_r($itemList, true));
+
+                // Send acknowledgment email to user
+                $this->sendAcknowledgmentEmailToUser($recipientEmail, $recipientName, $itemList, $assignerProfile);
+
+                // Send notification to manager
+                $managerName = implode(' ', array_map('ucfirst', explode('.', explode('@', $manager_email)[0])));
+                $this->sendAssignmentNotificationToManager($manager_email, $managerName, $recipientName, $itemList);
+
+                // Redirect with success
                 header("Location: " . URL . "inventoryassignment?success=" . urlencode($result));
             } else {
+                // Redirect with error
                 header("Location: " . URL . "inventoryassignment?error=" . urlencode($result));
             }
+
             exit();
         } else {
             $unassignedItems = $this->model->getUnassignedItems();
             $users = $this->model->getAllUsers();
-            $offices = $this->model->getOffices(); 
+            $offices = $this->model->getOffices();
+
             require APP . 'view/_templates/sessions.php';
             require APP . 'view/_templates/header.php';
             require APP . 'view/inventory_assignments/add_assignment.php';
         }
     }
+
+    //email to user to acknowledge assigned items
+    protected function sendAcknowledgmentEmailToUser($recipientEmail, $recipientName, $itemList, $assigner)
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'information.systems@evidenceaction.org';
+            $mail->Password   = 'rtnbqnbajjhcifbr';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom('information.systems@evidenceaction.org', 'MLE Inventory Tool');
+            $mail->addAddress($recipientEmail, $recipientName);
+            $mail->addBCC('information.systems@evidenceaction.org');
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Acknowledgment Required: Issued Item(s) – Action Needed Within 2 Working Days';
+
+            // Build item list HTML
+            $itemListHtml = "<ul>";
+            foreach ($itemList as $item) {
+                // $item is a string like: "Description: Lenovo LI1931ewA Monitor, Serial: 4ML125E15N1378, Tag: 200509"
+                // Let's split by comma and colon and wrap labels in <strong>
+                
+                // Explode by commas
+                $parts = explode(',', $item);
+                $formattedParts = [];
+
+                foreach ($parts as $part) {
+                    // trim whitespace
+                    $part = trim($part);
+
+                    // Split label and value by first colon
+                    $labelValue = explode(':', $part, 2);
+
+                    if (count($labelValue) == 2) {
+                        $label = htmlspecialchars(trim($labelValue[0]));
+                        $value = htmlspecialchars(trim($labelValue[1]));
+                        $formattedParts[] = "<strong>{$label}:</strong> {$value}";
+                    } else {
+                        // fallback if no colon
+                        $formattedParts[] = htmlspecialchars($part);
+                    }
+                }
+
+                $itemListHtml .= "<li>" . implode(', ', $formattedParts) . "</li>";
+            }
+            $itemListHtml .= "</ul>";
+
+
+            $assignerName = htmlspecialchars($assigner['name'] ?? 'N/A');
+            $assignerPosition = htmlspecialchars($assigner['position'] ?? 'N/A');
+            $assignerDepartment = htmlspecialchars($assigner['department'] ?? 'N/A');
+
+            $mail->Body = "
+                <p>Dear {$recipientName},</p>
+
+                <p>This is to inform you that item(s) have been issued to you through the MLE Inventory System. 
+                You are required to log in and acknowledge receipt of the item(s) within the next <strong>two (2) working days</strong>.</p>
+
+                {$itemListHtml}
+
+                <p><strong>Please note:</strong> Failure to acknowledge may affect future inventory tracking and accountability.</p>
+
+                <p>If you experience any issues accessing the system or identifying the issued item(s), kindly reach out to the <strong>IT Department</strong> for assistance.</p>
+
+                <p>Thank you for your prompt attention.</p>
+
+                <p>Best regards,<br>
+                {$assignerName}<br>
+                {$assignerPosition}<br>
+                {$assignerDepartment}<br>
+                Evidence Action</p>
+            ";
+
+            $mail->AltBody = "You have been assigned items. Please log in to the MLE Inventory Tool and acknowledge receipt within 2 working days.";
+
+            $mail->CharSet = 'UTF-8';
+            $mail->send();
+            error_log("Acknowledgment email sent to: {$recipientEmail}");
+        } catch (Exception $e) {
+            error_log("PHPMailer Error: {$mail->ErrorInfo}");
+        }
+    }
+
+    //email to manager to tell them their supervisee were assigned items
+    protected function sendAssignmentNotificationToManager($managerEmail, $managerName, $recipientName, $itemList)
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'information.systems@evidenceaction.org';
+            $mail->Password   = 'rtnbqnbajjhcifbr';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom('information.systems@evidenceaction.org', 'MLE Inventory Tool');
+            $mail->addAddress($managerEmail, $managerName);
+            $mail->addBCC('information.systems@evidenceaction.org');
+
+            $mail->isHTML(true);
+            $mail->Subject = "Notification: {$recipientName} Assigned Inventory Item(s)";
+
+            $itemListHtml = "<ul>";
+            foreach ($itemList as $item) {
+                $parts = explode(',', $item);
+                $formattedParts = [];
+                foreach ($parts as $part) {
+                    $labelValue = explode(':', $part, 2);
+                    if (count($labelValue) == 2) {
+                        $label = htmlspecialchars(trim($labelValue[0]));
+                        $value = htmlspecialchars(trim($labelValue[1]));
+                        $formattedParts[] = "<strong>{$label}:</strong> {$value}";
+                    } else {
+                        $formattedParts[] = htmlspecialchars($part);
+                    }
+                }
+                $itemListHtml .= "<li>" . implode(', ', $formattedParts) . "</li>";
+            }
+            $itemListHtml .= "</ul>";
+
+            $mail->Body = "
+                <p>Dear {$managerName},</p>
+
+                <p>This is to notify you that your supervisee <strong>{$recipientName}</strong> has been assigned the following inventory item(s):</p>
+
+                {$itemListHtml}
+
+                <p>If you believe this assignment is incorrect, kindly contact the IT department immediately.</p>
+
+                <p>Regards,<br>MLE Inventory Tool</p>
+            ";
+
+            $mail->AltBody = "{$recipientName} has been assigned inventory item(s).";
+
+            $mail->CharSet = 'UTF-8';
+            $mail->send();
+            error_log("Manager notification sent to: {$managerEmail}");
+        } catch (Exception $e) {
+            error_log("PHPMailer Manager Error: " . $mail->ErrorInfo);
+        }
+    }
+
     //edit assignment
     public function edit($id) {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
         }
-    
+
         $assignment = $this->model->getAssignmentById($id);
-        
+
         if (!$assignment) {
             echo "Assignment not found.";
             return;
         }
-    
+
         // Prevent editing if already acknowledged
         if ($assignment['acknowledgment_status'] !== 'pending') {
             echo "Editing not allowed. The assignment has been acknowledged.";
             return;
         }
-    
+
         // Fetch necessary data
         $unassignedItems = $this->model->getUnassignedItems();
         $users = $this->model->getAllUsers();
         $offices = $this->model->getOffices(); 
-    
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Validate input data
             $updatedData = [
@@ -83,7 +282,7 @@ class inventoryassignment extends Controller
                 'date_assigned' => $_POST['date_assigned'], 
                 'managed_by' => $_POST['managed_by']
             ];
-    
+
             // Ensure inventory_id is an array
             if (!empty($_POST['inventory_id']) && is_array($_POST['inventory_id'])) {
                 $inventory_ids = $_POST['inventory_id'];
@@ -91,11 +290,42 @@ class inventoryassignment extends Controller
                 header("Location: " . URL . "inventoryassignment/edit/$id?error=Invalid+inventory+selection");
                 exit();
             }
-    
+
             // Call update method with all required parameters
             $result = $this->model->updateAssignment($id, $updatedData, $inventory_ids);
-    
+
             if ($result) {
+                // === NEW: Send emails after successful update ===
+
+                // Fetch updated user info
+                $recipientData = $this->model->getUserById($updatedData['user_id']);
+                $recipientEmail = $recipientData['email'];
+                $emailPrefix = explode('@', $recipientEmail)[0];
+                $recipientName = implode(' ', array_map('ucfirst', explode('.', $emailPrefix)));
+
+                // Get assigner info from session
+                session_start();
+                $assignerEmail = $_SESSION['user_email'] ?? '';
+                $assignerProfile = $this->model->getUserProfileByEmail($assignerEmail);
+                if (!empty($assignerProfile['email'])) {
+                    $assignerEmailPrefix = explode('@', $assignerProfile['email'])[0];
+                    $assignerProfile['name'] = implode(' ', array_map('ucfirst', explode('.', $assignerEmailPrefix)));
+                } else {
+                    $assignerProfile['name'] = 'N/A';
+                }
+
+                // Get updated item summaries
+                $itemList = $this->model->getItemSummariesByIds($inventory_ids);
+
+                // Send acknowledgment email to user
+                $this->sendAcknowledgmentEmailToUser($recipientEmail, $recipientName, $itemList, $assignerProfile);
+
+                // Notify manager
+                $managerName = implode(' ', array_map('ucfirst', explode('.', explode('@', $updatedData['managed_by'])[0])));
+                $this->sendAssignmentNotificationToManager($updatedData['managed_by'], $managerName, $recipientName, $itemList);
+
+                // === END of new email notification logic ===
+
                 header("Location: " . URL . "inventoryassignment?success=" . urlencode("Assignment Updated Successfully"));
                 exit();
             } else {
@@ -109,6 +339,7 @@ class inventoryassignment extends Controller
             require APP . 'view/inventory_assignments/edit_assignment.php';
         }
     }
+
     
     //delete assignment
     public function delete() {
@@ -152,37 +383,6 @@ class inventoryassignment extends Controller
     // Acknowledge selected assignments
     public function acknowledge()
     {
-            if ($this->model === null) {
-                echo "Model not loaded properly!";
-                exit();
-            }
-            session_start();
-
-            if (!isset($_SESSION['user_email'])) { // Ensure email exists in session
-                header("Location: " . URL . "login");
-                exit();
-            }
-            
-            $user_email = $_SESSION['user_email'];
-            $assignment_id = $_POST['assignment_id'] ?? null;
-
-            if ($assignment_id) {
-                $updated_rows = $this->model->acknowledgeAssignment($assignment_id, $user_email);
-
-                if ($updated_rows > 0) {
-                    $_SESSION['success_message'] = "Item acknowledged successfully!";
-                } else {
-                    $_SESSION['error_message'] = "Failed to acknowledge item. Please try again.";
-                }
-            }
-
-            header("Location: " . URL . "inventoryassignment/pending");
-            exit();
-    }
-
-    //bulk acknowledging
-    public function acknowledgeAll()
-    {
         if ($this->model === null) {
             echo "Model not loaded properly!";
             exit();
@@ -196,13 +396,21 @@ class inventoryassignment extends Controller
         }
 
         $user_email = $_SESSION['user_email'];
+        $assignment_id = $_POST['assignment_id'] ?? null;
+        $device_state = trim($_POST['device_state'] ?? '');
 
-        $acknowledged = $this->model->acknowledgeAllAssignmentsByUser($user_email);
+        if (!$assignment_id || empty($device_state)) {
+            $_SESSION['error_message'] = "Assignment ID and device state are required.";
+            header("Location: " . URL . "inventoryassignment/pending");
+            exit();
+        }
 
-        if ($acknowledged) {
-            $_SESSION['success_message'] = "All items acknowledged successfully!";
+        $updated_rows = $this->model->acknowledgeAssignment($assignment_id, $user_email, $device_state);
+
+        if ($updated_rows > 0) {
+            $_SESSION['success_message'] = "Item acknowledged successfully!";
         } else {
-            $_SESSION['error_message'] = "Failed to acknowledge items. Please try again.";
+            $_SESSION['error_message'] = "Failed to acknowledge item. Please try again.";
         }
 
         header("Location: " . URL . "inventoryassignment/pending");
@@ -306,17 +514,79 @@ class inventoryassignment extends Controller
         // Check for existing active session
         $activeSession = $this->model->getActiveReconfirmationSession();
 
+        // Helper to calculate working days
+        function addWorkingDays(DateTime $date, int $days): DateTime {
+            $count = 0;
+            while ($count < $days) {
+                $date->modify('+1 day');
+                if ($date->format('N') < 6) { // Mon-Fri
+                    $count++;
+                }
+            }
+            return $date;
+        }
+
         if ($enabled) {
             if ($activeSession) {
                 $_SESSION['error'] = "Reconfirmation is already active. Only {$activeSession['initiated_by']} can deactivate it.";
             } else {
-                // Start a new session and get the inserted session ID
+                // Start new session
                 $sessionId = $this->model->startNewReconfirmationSession($adminEmail);
 
-                // Ensure session ID is valid before assigning
                 if ($sessionId && is_numeric($sessionId)) {
                     $this->model->assignSessionToUnconfirmed((int)$sessionId);
                     $_SESSION['success'] = "Reconfirmation session started successfully.";
+
+                    // Initial confirmation email
+                    $groupedAssignments = $this->model->getAssignmentsNeedingConfirmation();
+
+                    foreach ($groupedAssignments as $email => $data) {
+                        $rawName = $data['name'];
+                        $parts = explode('.', $rawName);
+                        $prettyName = '';
+                        foreach ($parts as $part) {
+                            $prettyName .= ucfirst(strtolower($part)) . ' ';
+                        }
+                        $prettyName = trim($prettyName);
+
+                        $tableRows = '';
+                        foreach ($data['assignments'] as $item) {
+                            $tableRows .= "<tr>
+                                <td>{$item['description']}</td>
+                                <td>{$item['tag_number']}</td>
+                                <td>{$item['serial_number']}</td>
+                            </tr>";
+                        }
+
+                        $mail = new PHPMailer(true);
+                        try {
+                            $mail->isSMTP();
+                            $mail->Host       = 'smtp.gmail.com';
+                            $mail->SMTPAuth   = true;
+                            $mail->Username   = 'information.systems@evidenceaction.org';
+                            $mail->Password   = 'rtnbqnbajjhcifbr';
+                            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                            $mail->Port       = 587;
+
+                            $mail->setFrom('information.systems@evidenceaction.org', 'MLE Inventory Tool');
+                            $mail->addAddress($email, $prettyName);
+                            $mail->addBCC('information.systems@evidenceaction.org');
+
+                            $mail->isHTML(true);
+                            $mail->Subject = 'Action Required: Confirm Your Assigned Item(s)';
+                            $mail->Body    = "Hi {$prettyName},<br><br>"
+                                . "You have been assigned the following item(s). Please log into the MLE Inventory Tool and confirm receipt within 5 working days.<br><br>"
+                                . "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse: collapse;'>"
+                                . "<tr><th>Item</th><th>Tag Number</th><th>Serial Number</th></tr>"
+                                . $tableRows
+                                . "</table><br>"
+                                . "Regards,<br>MLE Inventory Tool";
+
+                            $mail->send();
+                        } catch (Exception $e) {
+                            error_log("Initial email could not be sent to {$email}. Error: {$mail->ErrorInfo}");
+                        }
+                    }
                 } else {
                     $_SESSION['error'] = "Failed to start reconfirmation session. Please try again.";
                 }
@@ -327,6 +597,64 @@ class inventoryassignment extends Controller
             } elseif ($activeSession['initiated_by'] !== $adminEmail) {
                 $_SESSION['error'] = "Only {$activeSession['initiated_by']} can end this session.";
             } else {
+                // Send reminders if needed
+                $startDate = new DateTime($activeSession['start_date']);
+                $now = new DateTime();
+                $reminderDate = addWorkingDays(clone $startDate, 5);
+
+                if ($now >= $reminderDate) {
+                    $groupedAssignments = $this->model->getAssignmentsNeedingConfirmation();
+
+                    foreach ($groupedAssignments as $email => $data) {
+                        $rawName = $data['name'];
+                        $parts = explode('.', $rawName);
+                        $prettyName = '';
+                        foreach ($parts as $part) {
+                            $prettyName .= ucfirst(strtolower($part)) . ' ';
+                        }
+                        $prettyName = trim($prettyName);
+
+                        $tableRows = '';
+                        foreach ($data['assignments'] as $item) {
+                            $tableRows .= "<tr>
+                                <td>{$item['description']}</td>
+                                <td>{$item['tag_number']}</td>
+                                <td>{$item['serial_number']}</td>
+                            </tr>";
+                        }
+
+                        $mail = new PHPMailer(true);
+                        try {
+                            $mail->isSMTP();
+                            $mail->Host       = 'smtp.gmail.com';
+                            $mail->SMTPAuth   = true;
+                            $mail->Username   = 'information.systems@evidenceaction.org';
+                            $mail->Password   = 'rtnbqnbajjhcifbr';
+                            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                            $mail->Port       = 587;
+
+                            $mail->setFrom('rita.kogi@evidenceaction.org', 'MLE Inventory Tool');
+                            $mail->addAddress($email, $prettyName);
+                            $mail->addBCC('information.systems@evidenceaction.org');
+
+                            $mail->isHTML(true);
+                            $mail->Subject = 'Reminder: Confirm Your Assigned Item(s)';
+                            $mail->Body    = "Hi {$prettyName},<br><br>"
+                                . "This is a reminder to confirm receipt of the following item(s). Please log into the MLE Inventory Tool to confirm.<br><br>"
+                                . "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse: collapse;'>"
+                                . "<tr><th>Item</th><th>Tag Number</th><th>Serial Number</th></tr>"
+                                . $tableRows
+                                . "</table><br>"
+                                . "Regards,<br>MLE Inventory Tool";
+
+                            $mail->send();
+                        } catch (Exception $e) {
+                            error_log("Reminder email could not be sent to {$email}. Error: {$mail->ErrorInfo}");
+                        }
+                    }
+                }
+
+                // Deactivate session and reset toggles
                 $this->model->deactivateReconfirmationSession($activeSession['id']);
                 $this->model->resetReconfirmToggle();
                 $_SESSION['success'] = "Reconfirmation session ended.";
@@ -336,7 +664,7 @@ class inventoryassignment extends Controller
         header("Location: " . URL . "users/getUsers?");
         exit;
     }
-    
+
     //btns for users to recinfirm
     public function confirm() 
     {

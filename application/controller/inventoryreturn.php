@@ -160,9 +160,9 @@ class inventoryreturn extends Controller
         }
 
         $user_email = $_SESSION['user_email'];
-        $user_name_raw = explode('@', $user_email)[0]; // e.g. "rita.kogi"
+        $user_name_raw = explode('@', $user_email)[0]; 
 
-        // Convert to same format as getReceivers() formatting:
+        // Format like "Rita Kogi"
         $parts = explode('.', $user_name_raw);
         $first = isset($parts[0]) ? ucfirst(strtolower($parts[0])) : '';
         $last = isset($parts[1]) ? ucfirst(strtolower($parts[1])) : '';
@@ -180,16 +180,24 @@ class inventoryreturn extends Controller
             }
         }
 
+        if ($receiver_id !== null) {
+            $_SESSION['user_id'] = $receiver_id; // ✅ Fix: store for approveReturn()
+        } else {
+            $_SESSION['error'] = "User ID not found for approval.";
+            header("Location: " . URL . "error");
+            exit;
+        }
+
         $pendingApprovals = $this->model->getPendingApprovalsByUser($receiver_id);
 
-        // Load views
         require APP . 'view/_templates/sessions.php';
         require APP . 'view/_templates/header.php';
         require APP . 'view/inventoryreturns/pendingapprovals.php';
     }
 
     //approve returned item
-    public function approveReturn() {
+    public function approveReturn() 
+    {
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
             session_start();
     
@@ -216,11 +224,11 @@ class inventoryreturn extends Controller
                 $_SESSION['success'] = "Item return approved successfully!";
     
                 if ($item_state === 'lost') {
-                    header("Location: " . URL . "inventoryreturn/lostItems");
+                    header("Location: " . URL . "inventoryreturn/approve");
                 } elseif ($item_state === 'damaged') {
-                    header("Location: " . URL . "inventoryreturn/damagedItems");
+                    header("Location: " . URL . "inventoryreturn/approve");
                 } else {
-                    header("Location: " . URL . "inventoryreturn/unassignedItems");
+                    header("Location: " . URL . "inventoryreturn/approve");
                 }
                 exit;
             } else {
@@ -230,8 +238,7 @@ class inventoryreturn extends Controller
             }
         }
     }
-    
-        
+          
     //item classifications....
     public function lostItems() 
     {

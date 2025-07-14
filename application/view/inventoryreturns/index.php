@@ -131,6 +131,7 @@
                             <th>Serial Number</th>
                             <th>Tag Number</th>
                             <th>Date Assigned</th>
+                            <th>Device State</th>
                             <th>Managed By</th>
                             <th>Action</th>
                         </tr>
@@ -143,6 +144,7 @@
                                     <td><?= htmlspecialchars($assignment['serial_number'] ?? 'N/A'); ?></td>
                                     <td><?= htmlspecialchars(isset($assignment['tag_number']) ? $assignment['tag_number'] : '') ?></td>
                                     <td><?= htmlspecialchars($assignment['date_assigned'] ?? 'N/A'); ?></td>
+                                    <td><?= htmlspecialchars($assignment['device_state'] ?? 'N/A'); ?></td>
                                     <td><?= htmlspecialchars($assignment['managed_by'] ?? 'N/A'); ?></td>
                                     <td>
                                     <?php

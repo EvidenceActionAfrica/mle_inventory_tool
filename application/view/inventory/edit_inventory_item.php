@@ -58,7 +58,7 @@
             <i class="fas fa-edit me-1"></i> Edit Inventory Item
         </div>
         <div class="card-body">
-            <form action="<?= URL ?>inventory/edit/<?= htmlspecialchars($item['id']); ?>" method="POST" novalidate>
+            <form id="editForm" action="<?= URL ?>inventory/edit/<?= htmlspecialchars($item['id']); ?>" method="POST" novalidate>
                 <input type="hidden" name="id" value="<?= htmlspecialchars($item['id']) ?>">
 
                 <!-- Description Dropdown -->
@@ -191,9 +191,22 @@
         }
     }
 
-    // Initialize selects on page load to set dependent fields
+    // Run on DOM ready
     document.addEventListener('DOMContentLoaded', () => {
         populateCategory();
         setLocation();
+
+        // Preserve search filter during edit submission
+        const editForm = document.getElementById('editForm');
+        const savedSearch = sessionStorage.getItem('inventorySearch');
+
+        if (editForm && savedSearch) {
+            let action = editForm.getAttribute('action');
+            if (!action.includes('search=')) {
+                action += (action.includes('?') ? '&' : '?') + 'search=' + encodeURIComponent(savedSearch);
+                editForm.setAttribute('action', action);
+            }
+        }
     });
 </script>
+

@@ -17,15 +17,6 @@
     </div>
 </div>
 <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <i class="fas fa-tasks me-1"></i>
-        <form action="<?= URL ?>inventoryassignment/acknowledgeAll" method="POST" 
-            onsubmit="return confirm('Are you sure you want to acknowledge all assigned items? This action cannot be undone.');">
-            <button type="submit" class="add-btn">
-                Acknowledge All Items
-            </button>
-        </form>
-    </div>
     <div class="card-body table-responsive">
         <?php if (!empty($_GET['success'])): ?>
             <div class="alert alert-success"><?= htmlspecialchars($_GET['success']); ?></div>
@@ -55,9 +46,12 @@
                             <td><?= htmlspecialchars(isset($assignment['tag_number']) ? $assignment['tag_number'] : '') ?></td>
                             <td><?= htmlspecialchars($assignment['date_assigned']); ?></td>
                             <td>
-                                <form action="<?= URL ?>inventoryassignment/acknowledge" method="POST" class="d-inline"
-                                    onsubmit="return confirm('Are you sure you want to acknowledge this item?');">
+                                <form action="<?= URL ?>inventoryassignment/acknowledge" method="POST" class="ack-form" onsubmit="return confirmAcknowledge();">
                                     <input type="hidden" name="assignment_id" value="<?= $assignment['id'] ?>">
+
+                                    <textarea name="device_state" class="form-control form-control-sm mt-2 mb-2"
+                                            placeholder="Enter device state (e.g. new, scratched, slightly used)" required></textarea>
+
                                     <button type="submit" class="btn btn-success btn-sm">Acknowledge</button>
                                 </form>
                             </td>
@@ -81,4 +75,9 @@
             new simpleDatatables.DataTable(datatablesSimple);
         }
     });
+</script>
+<script>
+function confirmAcknowledge() {
+    return confirm("Are you sure you want to acknowledge this item?");
+}
 </script>

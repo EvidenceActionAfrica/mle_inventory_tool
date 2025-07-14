@@ -65,36 +65,43 @@
             </div>
             <div class="card-body table-responsive">
                 <table id="datatablesSimple">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Item</th>
-                        <th>Serial Number</th>
-                        <th>Tag Number</th>
-                        <th>Managed By</th>
-                        <th>Assigned Date</th>
-                        <th>Confirmation Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($reportData as $row): ?>
+                    <thead>
                         <tr>
-                        <td><?= htmlspecialchars($row['name'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['email'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars(($row['position'] ?? '') . ' - ' . ($row['department'] ?? '')); ?></td>
-                        <td><?= htmlspecialchars($row['item'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['serial_number'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['tag_number'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['managed_by'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['date_assigned'] ?? ''); ?></td>
-                        <td><?= htmlspecialchars($row['log_confirmation_date'] ?? ''); ?></td>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Item</th>
+                            <th>Serial Number</th>
+                            <th>Tag Number</th>
+                            <th>Managed By</th>
+                            <th>Assigned Date</th>
+                            <th>Confirmation Date</th>
+                            <th>Status</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-
+                    </thead>
+                    <tbody>
+                        <?php foreach ($reportData as $row): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['name'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['email'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars(($row['position'] ?? '') . ' - ' . ($row['department'] ?? '')); ?></td>
+                                <td><?= htmlspecialchars($row['item'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['serial_number'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['tag_number'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['managed_by'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['date_assigned'] ?? ''); ?></td>
+                                <td><?= htmlspecialchars($row['log_confirmation_date'] ?: ''); ?></td>
+                                <td>
+                                    <?php if ($row['confirmation_status'] === 'Pending'): ?>
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success">Confirmed</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

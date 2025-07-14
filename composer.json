@@ -19,6 +19,7 @@
         "php": ">=5.3.0",
         "google/apiclient": "2.13",
         "google/apiclient-services": "^0.396.0",
-        "guzzlehttp/guzzle": "7.5"
+        "guzzlehttp/guzzle": "7.5",
+        "phpmailer/phpmailer": "^6.10"
     }
 }
